@@ -1,0 +1,3 @@
+{"id": "q1", "question": "What chunk size does the splitter use by default?", "answer": "approximately 1000 characters with 10% overlap", "citations": []}
+{"id": "q2", "question": "How are figures described before indexing?", "answer": "via Azure OpenAI Vision or Azure AI Content Understanding", "citations": []}
+{"id": "q3", "question": "What is the Verifier's role in the multi-agent loop?", "answer": "check each claim against cited evidence; flag unsupported claims", "citations": []}

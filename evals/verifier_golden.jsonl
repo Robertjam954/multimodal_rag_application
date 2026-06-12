@@ -1,0 +1,4 @@
+{"claim": "Chunks default to 1000 characters with 10% overlap.", "evidence": [{"id": "e1", "text": "The default chunk size is approximately 1000 characters (roughly 400-500 tokens), with a 10% overlap between consecutive chunks."}], "expected_label": "supported"}
+{"claim": "The system uses 50,000 character chunks.", "evidence": [{"id": "e1", "text": "The default chunk size is approximately 1000 characters."}], "expected_label": "unsupported"}
+{"claim": "Figures are uploaded to Blob Storage and assigned a URL.", "evidence": [{"id": "e2", "text": "The figure image is uploaded to Azure Blob Storage and assigned a URL."}], "expected_label": "supported"}
+{"claim": "The Verifier always blocks the answer.", "evidence": [{"id": "e3", "text": "If unsupported claims > 0, retry once; otherwise downgrade unsupported sentences to 'insufficient evidence'."}], "expected_label": "unsupported"}

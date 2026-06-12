@@ -1,4 +1,4 @@
 # This file is the pin set for production. Regenerate with:
-#   cd app/backend && uv pip compile requirements.in -o requirements.txt --python-version 3.11
+#   cd app/backend && uv pip compile requirements.in -o requirements.txt --python-version 3.14.5
 # Until first compile, install from requirements.in directly: `uv pip sync requirements.in` or `pip install -r requirements.in`.
 -r requirements.in

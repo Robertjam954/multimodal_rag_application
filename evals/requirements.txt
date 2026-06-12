@@ -1,0 +1,9 @@
+azure-identity>=1.17
+azure-ai-evaluation>=1.0.0
+azure-ai-projects>=1.0.0b6
+openai>=1.50
+promptfoo>=0.85
+ragas>=0.1.18
+pandas>=2.2
+jsonlines>=4.0
+tqdm>=4.66

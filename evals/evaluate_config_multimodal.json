@@ -1,0 +1,6 @@
+{
+    "target_url": "http://localhost:50505/chat/nonstream",
+    "ground_truth": "evals/ground_truth_multimodal.jsonl",
+    "metrics": ["relevance", "citations_matched"],
+    "results_dir": "evals/results"
+}

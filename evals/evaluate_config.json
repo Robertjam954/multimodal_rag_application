@@ -1,0 +1,7 @@
+{
+    "target_url": "http://localhost:50505/chat/nonstream",
+    "ground_truth": "evals/ground_truth.jsonl",
+    "metrics": ["groundedness", "relevance", "coherence", "fluency", "citations_matched"],
+    "results_dir": "evals/results",
+    "num_questions": null
+}
