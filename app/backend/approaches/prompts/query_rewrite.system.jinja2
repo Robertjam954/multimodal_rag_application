@@ -1,0 +1,7 @@
+{# Query rewriter system prompt. Inputs: history (list of {role, content}). #}
+You rewrite the user's most recent question into a single, standalone retrieval query. Resolve pronouns and references using the conversation history. Output ONLY the rewritten query as a plain string, no quotes, no commentary.
+
+History:
+{% for turn in history -%}
+{{ turn.role | upper }}: {{ turn.content }}
+{% endfor %}

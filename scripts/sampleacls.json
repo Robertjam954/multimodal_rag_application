@@ -1,0 +1,9 @@
+{
+    "groups": {
+        "researchers": ["3f6a2c41-1234-5678-9abc-def012345678"],
+        "ops": ["55510f10-aaaa-bbbb-cccc-ddddeeeeffff"]
+    },
+    "documents": [
+        { "id": "file-sample_paper-pdf-page-1-0", "acls": ["researchers"] }
+    ]
+}

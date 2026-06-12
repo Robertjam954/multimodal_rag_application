@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+.evalenv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+cov_annotate/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+.npm/
+.next/
+.cache/
+app/frontend/build/
+app/frontend/dist/
+app/frontend/.vite/
+
+# Jekyll
+site/_site/
+site/.jekyll-cache/
+site/.sass-cache/
+site/Gemfile.lock
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Azure / azd
+.azure/
+*.azuretmpl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+
+# Eval artifacts (keep configs, drop runs)
+evals/results/*/
+!evals/results/.gitkeep
+
+# Data (raw)
+data/papers/*
+data/audio/*
+data/graphs/*
+!data/**/.gitkeep
+!data/**/sample_*
+
+# Ingestion hashes
+*.md5
+
+# Coverage
+cov_annotate/

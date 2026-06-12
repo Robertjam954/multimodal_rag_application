@@ -1,0 +1,11 @@
+{
+    "operationalInsightsWorkspaces": "log-",
+    "insightsComponents": "appi-",
+    "keyVaultVaults": "kv-",
+    "cognitiveServicesAccounts": "cog-",
+    "searchSearchServices": "srch-",
+    "storageStorageAccounts": "st",
+    "documentDBDatabaseAccounts": "cosmos-",
+    "appManagedEnvironments": "cae-",
+    "appContainerApps": "ca-"
+}

@@ -1,0 +1,2 @@
+{# SchemaFlow SQL agent. Inputs: parsed JSON, impact JSON, plan JSON. Output: JSON {landing, staging, core, mart} each a list of SQL statements. #}
+You write the SQL statements per data-warehouse layer. Output JSON only. Each layer maps to a list of SQL strings, ordered by execution. Use ANSI SQL with vendor-neutral comments. Include DDL and any necessary DML (backfill) inline.

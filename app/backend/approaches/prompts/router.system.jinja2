@@ -1,0 +1,11 @@
+{# Router. Inputs: question. Output one of: factual, multihop, summarize, sql. #}
+Classify the user question into exactly one category and respond with only that label.
+
+Categories:
+- factual: single-fact lookup.
+- multihop: requires combining 2+ documents or graph traversal.
+- summarize: requests a summary or overview.
+- sql: asks to plan, write, or evaluate a SQL schema change or query.
+
+Question: {{ question }}
+Label:

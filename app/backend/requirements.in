@@ -1,0 +1,56 @@
+# Web
+quart>=0.19.6
+quart-cors>=0.7
+gunicorn>=22.0
+uvicorn[standard]>=0.30
+uvloop>=0.19; sys_platform != 'win32'
+
+# Azure
+azure-identity>=1.17
+azure-search-documents>=11.6.0b4
+azure-ai-documentintelligence>=1.0.0
+azure-cognitiveservices-speech>=1.40
+azure-storage-blob>=12.20
+azure-storage-file-datalake>=12.15
+azure-cosmos>=4.7
+azure-monitor-opentelemetry>=1.6
+azure-ai-contentsafety>=1.0.0
+azure-ai-textanalytics>=5.3
+azure-mgmt-cognitiveservices>=13.5
+
+# OpenAI / agents
+openai>=1.50
+langgraph>=0.2.30
+langchain-core>=0.3
+langchain-openai>=0.2
+langsmith>=0.1.130
+
+# GraphRAG
+graphrag>=0.3
+gremlinpython>=3.7
+networkx>=3.3
+
+# OTel instrumentation
+opentelemetry-instrumentation-asgi>=0.47b0
+opentelemetry-instrumentation-httpx>=0.47b0
+opentelemetry-instrumentation-aiohttp-client>=0.47b0
+opentelemetry-instrumentation-openai>=0.31.0
+
+# PDF + media
+pypdf>=4.3
+beautifulsoup4>=4.12
+pillow>=10.4
+python-magic>=0.4
+tiktoken>=0.7
+
+# Utilities
+jinja2>=3.1
+pydantic>=2.8
+python-dotenv>=1.0
+httpx>=0.27
+tenacity>=8.5
+msgspec>=0.18
+
+# Local-mode fallbacks (only loaded when MODE=local)
+faiss-cpu>=1.8; sys_platform != 'win32'
+faster-whisper>=1.0; sys_platform != 'win32'

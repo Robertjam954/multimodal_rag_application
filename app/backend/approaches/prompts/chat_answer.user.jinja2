@@ -1,0 +1,7 @@
+{# Answerer user prompt. Inputs: question, conversation_history (list of {role, content}). #}
+{% for turn in conversation_history -%}
+{{ turn.role | upper }}: {{ turn.content }}
+{% endfor -%}
+USER: {{ question }}
+
+Answer with citations as instructed.

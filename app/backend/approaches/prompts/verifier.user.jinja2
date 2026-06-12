@@ -1,0 +1,7 @@
+{# Verifier user prompt. Inputs: claim, citation_evidence (list of strings). #}
+Claim: {{ claim }}
+
+Evidence:
+{% for e in citation_evidence %}
+- {{ e }}
+{% endfor %}

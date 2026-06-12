@@ -1,0 +1,29 @@
+name: multimodal-rag-application
+metadata:
+  template: multimodal-rag-application@0.1.0
+
+services:
+  backend:
+    project: app/backend
+    language: python
+    host: containerapp
+    docker:
+      path: Dockerfile
+      context: .
+
+  functions:
+    project: app/functions
+    language: python
+    host: function
+
+hooks:
+  preprovision:
+    shell: sh
+    run: scripts/auth_init.sh
+    interactive: true
+    continueOnError: false
+  postprovision:
+    shell: sh
+    run: scripts/prepdocs.sh
+    interactive: false
+    continueOnError: true

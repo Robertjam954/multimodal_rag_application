@@ -1,0 +1,6 @@
+{
+    "app": { "title": "multimodal RAG demo" },
+    "chat": { "placeholder": "Ask about the indexed PDFs and recordings...", "send": "Send" },
+    "settings": { "top": "Top results", "verifier": "Verifier", "graphrag": "GraphRAG", "streaming": "Streaming" },
+    "tabs": { "answer": "Answer", "thought": "Thought process", "support": "Supporting content", "graph": "Knowledge graph" }
+}

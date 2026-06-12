@@ -1,0 +1,16 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "search_sources",
+      "description": "Search the knowledge base for relevant text and figures.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string", "description": "Standalone retrieval query."}
+        },
+        "required": ["query"]
+      }
+    }
+  }
+]

@@ -1,0 +1,11 @@
+-r app/backend/requirements.txt
+pytest>=8.0
+pytest-asyncio>=0.23
+pytest-cov>=4.1
+pytest-mock>=3.12
+playwright>=1.45
+respx>=0.21
+pre-commit>=3.7
+ruff>=0.5.0
+ty>=0.0.1a3
+locust>=2.27

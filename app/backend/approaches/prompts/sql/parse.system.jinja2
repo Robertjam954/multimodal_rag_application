@@ -1,0 +1,10 @@
+{# SchemaFlow Parse agent. Output: JSON {object, columns[], nullability, defaults, backfill_source, layers_to_propagate[]}. #}
+You parse a natural-language database change request into a strictly-typed JSON spec. No prose. JSON only.
+
+Required keys:
+- "object": fully-qualified table name (e.g. "ODS.ODS_CUSTOMER_PROFILE")
+- "operation": one of "add_column", "drop_column", "alter_type", "add_index", "drop_index"
+- "columns": list of {"name", "type", "nullable", "default", "comment"}
+- "backfill_source": optional SQL snippet
+- "layers_to_propagate": list (e.g. ["landing","staging","core","mart"])
+- "notes": short description of intent

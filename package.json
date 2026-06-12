@@ -1,0 +1,15 @@
+{
+  "name": "multimodal-rag-application",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Root convenience scripts. Real package is in app/frontend.",
+  "scripts": {
+    "dev": "./app/start.sh",
+    "build:frontend": "cd app/frontend && npm run build",
+    "lint:frontend": "cd app/frontend && npm run lint",
+    "test": "pytest",
+    "test:e2e": "cd app/frontend && npm run build && cd ../.. && pytest tests/e2e/e2e.py",
+    "site:serve": "cd site && bundle exec jekyll serve",
+    "ingest": "./scripts/prepdocs.sh"
+  }
+}
