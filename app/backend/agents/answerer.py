@@ -29,10 +29,15 @@ def _build_evidence(evidence: DataPoints) -> list[dict[str, Any]]:
     return out
 
 
-def _render_system(prompt_manager: Any, evidence: DataPoints) -> str:
+def _render_system(prompt_manager: Any, evidence: DataPoints, template: str = "chat_answer.system.jinja2") -> str:
     if prompt_manager is not None:
         try:
-            return prompt_manager.render("chat_answer.system.jinja2", evidence=_build_evidence(evidence))
+            evidence_payload = _build_evidence(evidence)
+            return prompt_manager.render(
+                template,
+                evidence=evidence_payload,
+                sources="\n".join(f"[{e['id']}] {e['content_snippet']}" for e in evidence_payload),
+            )
         except Exception:
             pass
     snippets = "\n".join(f"[{c.id}] {c.content_snippet or ''}" for c in evidence.citations)
@@ -62,7 +67,8 @@ async def answer(
     overrides: dict[str, Any] | None = None,
     stream: bool = False,
 ) -> tuple[str, list[Claim], list[Citation]]:
-    system = _render_system(prompt_manager, evidence)
+    template = (overrides or {}).get("answerer_prompt", "chat_answer.system.jinja2")
+    system = _render_system(prompt_manager, evidence, template=template)
     user = _render_user(prompt_manager, question, messages)
     text = await complete(system=system, user=user, role="chat")
     claims = [_extract_claim(s, evidence) for s in SENTENCE_END.split(text) if s.strip()]
@@ -77,7 +83,8 @@ async def answer_stream(
     overrides: dict[str, Any] | None = None,
 ) -> AsyncIterator[tuple[str, Claim | None]]:
     """Yields (token, claim_complete_or_none). Sentence boundaries trigger claim emission."""
-    system = _render_system(prompt_manager, evidence)
+    template = (overrides or {}).get("answerer_prompt", "chat_answer.system.jinja2")
+    system = _render_system(prompt_manager, evidence, template=template)
     user = _render_user(prompt_manager, question, messages)
     buf = ""
     async for token in stream(system=system, user=user, role="chat"):

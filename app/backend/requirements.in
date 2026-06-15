@@ -51,6 +51,12 @@ httpx>=0.27
 tenacity>=8.5
 msgspec>=0.18
 
+# Tutor / sql_notes / youtube
+aiosqlite>=0.20
+youtube-transcript-api>=0.6
+fastmcp>=0.4
+google-api-python-client>=2.118  # optional - YouTube Data API metadata
+
 # Local-mode fallbacks (only loaded when MODE=local)
 faiss-cpu>=1.8; sys_platform != 'win32'
 faster-whisper>=1.0; sys_platform != 'win32'

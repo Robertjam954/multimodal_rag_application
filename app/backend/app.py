@@ -26,6 +26,7 @@ from quart_cors import cors
 from config import (
     CONFIG_AGENTIC_KNOWLEDGEBASE_ENABLED,
     CONFIG_AUTH_CLIENT,
+    CONFIG_BLOG_WRITER_APPROACH,
     CONFIG_CHAT_APPROACH,
     CONFIG_CHAT_HISTORY_BROWSER_ENABLED,
     CONFIG_CHAT_HISTORY_COSMOS_ENABLED,
@@ -37,10 +38,13 @@ from config import (
     CONFIG_GRAPHRAG_ENABLED,
     CONFIG_INGESTER,
     CONFIG_LANGSMITH_CLIENT,
+    CONFIG_MAGIC_LINK_AUTH_ENABLED,
     CONFIG_MULTIAGENT_APPROACH,
     CONFIG_MULTIMODAL_ENABLED,
     CONFIG_OPENAI_CLIENT,
+    CONFIG_OPENROUTER_CHAT_ENABLED,
     CONFIG_PII_REDACTION_ENABLED,
+    CONFIG_QUERY_ENHANCEMENT_ENABLED,
     CONFIG_RATE_LIMITER,
     CONFIG_REASONING_EFFORT_ENABLED,
     CONFIG_REASONING_EFFORT_OPTIONS,
@@ -54,12 +58,16 @@ from config import (
     CONFIG_SPEECH_SERVICE_VOICE,
     CONFIG_SQL_APPROACH,
     CONFIG_SQL_DEMO_ENABLED,
+    CONFIG_SQL_NOTES_APPROACH,
+    CONFIG_SQL_NOTES_DEMO_ENABLED,
     CONFIG_STREAMING_ENABLED,
+    CONFIG_TUTOR_MODE_ENABLED,
     CONFIG_USER_BLOB_MANAGER,
     CONFIG_USER_UPLOAD_ENABLED,
     CONFIG_VECTOR_SEARCH_ENABLED,
     CONFIG_VERIFIER_ENABLED,
     CONFIG_VOICE_DEMO_ENABLED,
+    CONFIG_YOUTUBE_INGEST_ENABLED,
 )
 from decorators import authenticated, ratelimited
 from error import error_dict, error_response
@@ -185,6 +193,128 @@ async def sql_plan():
     return jsonify(result)
 
 
+@bp.route("/sql/notes", methods=["POST"])
+@ratelimited()
+@authenticated
+async def sql_notes_stream():
+    if not current_app.config[CONFIG_SQL_NOTES_DEMO_ENABLED]:
+        return error_response("sql notes disabled", "not_enabled", 404)
+    body = await request.get_json()
+    if not body:
+        return error_response("missing body", "bad_request", 400)
+    approach = current_app.config[CONFIG_SQL_NOTES_APPROACH]
+
+    async def event_stream() -> AsyncGenerator[bytes, None]:
+        try:
+            async for evt in approach.run_stream(
+                messages=body.get("messages", []),
+                context=body.get("context", {}),
+                session_state=body.get("session_state"),
+            ):
+                yield f"data: {json.dumps(evt)}\n\n".encode()
+        except Exception as e:  # noqa: BLE001
+            logger.exception("sql_notes_stream error")
+            yield f"data: {json.dumps(error_dict(str(e), 'sql_notes_stream_error'))}\n\n".encode()
+        yield b"data: {\"event\": \"done\"}\n\n"
+
+    return event_stream(), 200, {"Content-Type": "text/event-stream", "Cache-Control": "no-cache"}
+
+
+@bp.route("/blog/generate", methods=["POST"])
+@ratelimited()
+@authenticated
+async def blog_generate():
+    if not current_app.config[CONFIG_SQL_NOTES_DEMO_ENABLED]:
+        return error_response("blog generation disabled", "not_enabled", 404)
+    body = await request.get_json()
+    if not body or "note_id" not in body:
+        return error_response("note_id is required", "bad_request", 400)
+    approach = current_app.config[CONFIG_BLOG_WRITER_APPROACH]
+    try:
+        result = await approach.run_for_note(int(body["note_id"]), dry_run=bool(body.get("dry_run")))
+    except LookupError as e:
+        return error_response(str(e), "not_found", 404)
+    except ValueError as e:
+        return error_response(str(e), "bad_request", 400)
+    return jsonify(result)
+
+
+@bp.route("/youtube/ingest", methods=["POST"])
+@ratelimited()
+@authenticated
+async def youtube_ingest():
+    if not current_app.config[CONFIG_YOUTUBE_INGEST_ENABLED]:
+        return error_response("youtube ingestion disabled", "not_enabled", 404)
+    body = await request.get_json()
+    if not body or not body.get("url"):
+        return error_response("url is required", "bad_request", 400)
+    from prepdocslib.page import Chunk
+    from prepdocslib.textsplitter import split_text
+    from prepdocslib.youtubeparser import YouTubeTranscriptParser
+    from sql_notes import get_db
+    from youtube_service import fetch_metadata, parse_video_id
+
+    try:
+        video_id = parse_video_id(body["url"])
+    except ValueError as e:
+        return error_response(str(e), "bad_request", 400)
+
+    metadata = await fetch_metadata(video_id)
+    parser = YouTubeTranscriptParser()
+    pages = []
+    try:
+        async for page in parser.parse(b"", f"youtube://{video_id}"):
+            pages.append(page)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("youtube transcript fetch failed")
+        return error_response(f"transcript fetch failed: {e}", "transcript_error", 502)
+
+    transcript_text = "\n".join(p.text for p in pages)
+    chunks: list[Chunk] = []
+    for p in pages:
+        for ci, ctext in enumerate(split_text(p.text)):
+            chunks.append(
+                Chunk(
+                    id=f"youtube-{video_id}-{p.page_number}-{ci}",
+                    content=ctext,
+                    source_file=f"youtube://{video_id}",
+                    source_page=p.page_number,
+                    storage_url=metadata.video_url,
+                )
+            )
+
+    ingester = current_app.config.get(CONFIG_INGESTER)
+    if ingester and ingester.search and chunks:
+        try:
+            await ingester.search.upsert(chunks)
+        except Exception:
+            logger.exception("search upsert failed; note will still be inserted into blog_notes")
+
+    note_id = await get_db().insert_note(
+        content_topic=metadata.title or f"YouTube {video_id}",
+        hook_intro=(metadata.description or "")[:500],
+        source_type="video",
+        source_url=metadata.video_url,
+        transcript=transcript_text[:50_000],
+        tags=body.get("tags") or [],
+    )
+    return jsonify({"note_id": note_id, "video_id": video_id, "chunks": len(chunks), "title": metadata.title})
+
+
+@bp.route("/youtube/videos", methods=["GET"])
+@ratelimited()
+async def youtube_videos():
+    if not current_app.config[CONFIG_YOUTUBE_INGEST_ENABLED]:
+        return error_response("youtube ingestion disabled", "not_enabled", 404)
+    from sql_notes import get_db
+
+    rows = await get_db().run_query(
+        "SELECT id, content_topic, source_url, created_at FROM blog_notes "
+        "WHERE source_type = 'video' ORDER BY created_at DESC LIMIT 200"
+    )
+    return jsonify({"videos": rows})
+
+
 @bp.route("/papers/upload", methods=["POST"])
 @ratelimited()
 @authenticated
@@ -259,12 +389,16 @@ async def _setup_clients(app: Quart) -> None:
     from approaches.multiagent_approach import MultiAgentApproach
     from approaches.chatreadretrieveread import ChatReadRetrieveReadApproach
     from approaches.sql_schemaflow_approach import SchemaFlowSQLApproach
+    from approaches.sql_notes_approach import SQLNotesApproach
+    from approaches.blog_writer_approach import BlogWriterApproach
     from approaches.promptmanager import PromptManager
 
     pm = PromptManager()
     app.config[CONFIG_CHAT_APPROACH] = ChatReadRetrieveReadApproach(prompt_manager=pm)
     app.config[CONFIG_MULTIAGENT_APPROACH] = MultiAgentApproach(prompt_manager=pm)
     app.config[CONFIG_SQL_APPROACH] = SchemaFlowSQLApproach(prompt_manager=pm)
+    app.config[CONFIG_SQL_NOTES_APPROACH] = SQLNotesApproach(prompt_manager=pm)
+    app.config[CONFIG_BLOG_WRITER_APPROACH] = BlogWriterApproach(prompt_manager=pm)
 
     # Flags from env
     def b(name: str, default: str = "false") -> bool:
@@ -277,6 +411,12 @@ async def _setup_clients(app: Quart) -> None:
     app.config[CONFIG_AGENTIC_KNOWLEDGEBASE_ENABLED] = b("USE_AGENTIC_KNOWLEDGEBASE", "false")
     app.config[CONFIG_VOICE_DEMO_ENABLED] = b("USE_VOICE_DEMO", "true")
     app.config[CONFIG_SQL_DEMO_ENABLED] = b("USE_SQL_DEMO", "true")
+    app.config[CONFIG_SQL_NOTES_DEMO_ENABLED] = b("USE_SQL_NOTES_DEMO", "true")
+    app.config[CONFIG_YOUTUBE_INGEST_ENABLED] = b("USE_YOUTUBE_INGEST", "true")
+    app.config[CONFIG_OPENROUTER_CHAT_ENABLED] = b("USE_OPENROUTER_CHAT", "false")
+    app.config[CONFIG_QUERY_ENHANCEMENT_ENABLED] = b("USE_QUERY_ENHANCEMENT", "true")
+    app.config[CONFIG_MAGIC_LINK_AUTH_ENABLED] = b("USE_MAGIC_LINK_AUTH", "false")
+    app.config[CONFIG_TUTOR_MODE_ENABLED] = b("USE_TUTOR_MODE", "true")
     app.config[CONFIG_CONTENT_SAFETY_ENABLED] = b("USE_CONTENT_SAFETY", "false")
     app.config[CONFIG_PII_REDACTION_ENABLED] = b("USE_PII_REDACTION", "false")
     app.config[CONFIG_FEEDBACK_ENABLED] = b("USE_FEEDBACK", "true")

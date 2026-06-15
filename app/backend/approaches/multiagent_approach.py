@@ -59,8 +59,29 @@ class MultiAgentApproach(Approach):
         context: dict[str, Any] | None = None,
         session_state: str | None = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
-        overrides = (context or {}).get("overrides", {})
+        overrides = dict((context or {}).get("overrides", {}))
         question = messages[-1]["content"] if messages else ""
+
+        # Tutor persona: route the answerer at the dedicated tutor template
+        if os.getenv("USE_TUTOR_MODE", "true").lower() == "true" and "answerer_prompt" not in overrides:
+            overrides["answerer_prompt"] = "tutor.system.jinja2"
+
+        # Query enhancement: expand short or acronym-heavy queries before retrieval
+        if (
+            os.getenv("USE_QUERY_ENHANCEMENT", "true").lower() == "true"
+            and len(question.split()) <= 5
+            and self.prompt_manager is not None
+        ):
+            try:
+                from agents._llm import complete
+
+                enhancement_prompt = self.prompt_manager.render("query_enhancement.system.jinja2")
+                enhanced = (await complete(system=enhancement_prompt, user=question, role="chat")).strip()
+                if enhanced and enhanced != question:
+                    yield {"event": "query_enhanced", "data": {"original": question, "enhanced": enhanced}}
+                    question = enhanced
+            except Exception:
+                logger.exception("query enhancement failed; using original question")
 
         # Content safety screen (optional)
         if os.getenv("USE_CONTENT_SAFETY", "false").lower() == "true":

@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 def _parser_for(filename: str):
     name = filename.lower()
+    if name.startswith("youtube://"):
+        from prepdocslib.youtubeparser import YouTubeTranscriptParser
+
+        return YouTubeTranscriptParser()
     if name.endswith(".pdf"):
         return PdfParser()
     return TextParser()

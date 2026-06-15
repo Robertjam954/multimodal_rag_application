@@ -1,0 +1,26 @@
+Expand the user's question into a denser retrieval query for an AI-engineering
+knowledge base. Output the expanded query as a single line of plain text with
+no labels, no quotes, no bullet points.
+
+Rules:
+
+- If the input is already a complete, specific question (>= 6 content words,
+  names a tool or concept), return it unchanged.
+- If the input is short or acronym-heavy, expand it with:
+  * the full form of every acronym (`RAG` -> `retrieval-augmented generation`)
+  * 2-3 closely related implementation tools or libraries
+  * 1-2 nearby concepts the user might actually want
+- Never invent product names, version numbers, or benchmarks.
+- Stay under 30 words total.
+- Do not change the user's intent - only widen the search surface.
+
+Examples:
+
+Input:  RAG
+Output: retrieval-augmented generation RAG vector search embeddings LangChain LlamaIndex knowledge base document retrieval
+
+Input:  prompt caching
+Output: prompt caching ephemeral cache control reuse system prompt cost reduction Anthropic OpenAI Azure
+
+Input:  How do I evaluate a RAG system without a labelled dataset?
+Output: How do I evaluate a RAG system without a labelled dataset?

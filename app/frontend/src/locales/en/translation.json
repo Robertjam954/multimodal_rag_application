@@ -1,6 +1,37 @@
 {
-    "app": { "title": "multimodal RAG demo" },
-    "chat": { "placeholder": "Ask about the indexed PDFs and recordings...", "send": "Send" },
-    "settings": { "top": "Top results", "verifier": "Verifier", "graphrag": "GraphRAG", "streaming": "Streaming" },
-    "tabs": { "answer": "Answer", "thought": "Thought process", "support": "Supporting content", "graph": "Knowledge graph" }
+    "app": {
+        "title": "AI Engineering Tutor",
+        "subtitle": "Ask about indexed lectures, tutorials, papers, and your notes library."
+    },
+    "chat": {
+        "placeholder": "Ask the tutor - papers, podcasts, YouTube tutorials, your notes...",
+        "send": "Send",
+        "examples": [
+            "What did the embedding lecture say about cosine vs dot product?",
+            "Which YouTube tutorials covered RAG evaluation?",
+            "Draft a blog post from my notes on prompt caching.",
+            "Show me notes about hybrid retrieval."
+        ]
+    },
+    "ingest": {
+        "youtubeHeading": "Add a YouTube tutorial",
+        "youtubePlaceholder": "Paste a YouTube URL or video id",
+        "youtubeButton": "Ingest",
+        "papersHeading": "Upload a paper or recording"
+    },
+    "settings": {
+        "top": "Top results",
+        "verifier": "Verifier",
+        "graphrag": "GraphRAG",
+        "streaming": "Streaming",
+        "tutorMode": "Tutor mode",
+        "queryEnhancement": "Query enhancement"
+    },
+    "tabs": {
+        "answer": "Answer",
+        "thought": "Thought process",
+        "support": "Supporting content",
+        "graph": "Knowledge graph",
+        "notes": "Notes library"
+    }
 }
