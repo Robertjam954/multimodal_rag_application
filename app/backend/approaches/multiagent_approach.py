@@ -62,6 +62,38 @@ class MultiAgentApproach(Approach):
         overrides = dict((context or {}).get("overrides", {}))
         question = messages[-1]["content"] if messages else ""
 
+        # Semantic cache lookup (no-op if REDIS_URL unset or embed fails)
+        question_embedding: list[float] | None = None
+        if (
+            question
+            and os.getenv("USE_SEMANTIC_CACHE", "true").lower() == "true"
+            and not overrides.get("skip_cache")
+        ):
+            try:
+                from core.semantic_cache import SemanticCache
+                from prepdocslib.embeddings import TextEmbeddings
+
+                emb = await TextEmbeddings().embed([question])
+                if emb and emb[0]:
+                    question_embedding = emb[0]
+                    acl = (context or {}).get("auth_claims")
+                    hit = await SemanticCache.lookup(question_embedding, acl=acl)
+                    if hit is not None:
+                        for c in hit.citations:
+                            yield {"event": "citation", "data": c}
+                        if hit.answer:
+                            yield {"event": "token", "data": hit.answer}
+                        for cl in []:
+                            yield {"event": "claim", "data": cl}
+                        if hit.verdict is not None:
+                            yield {"event": "verdict", "data": hit.verdict}
+                        if hit.followups:
+                            yield {"event": "followups", "data": hit.followups}
+                        yield {"event": "cache_hit", "data": {"model": hit.model, "ts": hit.ts}}
+                        return
+            except Exception:
+                logger.exception("semantic cache lookup failed; proceeding without cache")
+
         # Tutor persona: route the answerer at the dedicated tutor template
         if os.getenv("USE_TUTOR_MODE", "true").lower() == "true" and "answerer_prompt" not in overrides:
             overrides["answerer_prompt"] = "tutor.system.jinja2"
@@ -180,3 +212,26 @@ class MultiAgentApproach(Approach):
             yield {"event": "cost", "data": CostMeter.snapshot()}
         except Exception:
             pass
+
+        # Write-back to semantic cache (only when verifier was happy and we have an embedding)
+        if (
+            question_embedding is not None
+            and accumulated
+            and unsupported == 0
+            and os.getenv("USE_SEMANTIC_CACHE", "true").lower() == "true"
+        ):
+            try:
+                from core.semantic_cache import SemanticCache
+
+                await SemanticCache.store(
+                    question=question,
+                    embedding=question_embedding,
+                    answer=accumulated,
+                    citations=[c.__dict__ if hasattr(c, "__dict__") else c for c in evidence.citations],
+                    verdict={"unsupported_claims": unsupported, "retried": retried},
+                    followups=locals().get("followups") or [],
+                    model=os.getenv("AZURE_OPENAI_CHATGPT_DEPLOYMENT", "gpt-4.1-mini"),
+                    acl=(context or {}).get("auth_claims"),
+                )
+            except Exception:
+                logger.exception("semantic cache store failed")

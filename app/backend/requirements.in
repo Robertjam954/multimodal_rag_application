@@ -57,6 +57,10 @@ youtube-transcript-api>=0.6
 fastmcp>=0.4
 google-api-python-client>=2.118  # optional - YouTube Data API metadata
 
+# Semantic cache + embedding cache (Redis Stack)
+redis[hiredis]>=5.0
+redisvl>=0.3
+
 # Local-mode fallbacks (only loaded when MODE=local)
 faiss-cpu>=1.8; sys_platform != 'win32'
 faster-whisper>=1.0; sys_platform != 'win32'

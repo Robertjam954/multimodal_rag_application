@@ -29,11 +29,47 @@ class TextEmbeddings:
 
     @retry(wait=wait_exponential_jitter(initial=1, max=30), stop=stop_after_attempt(5), reraise=True)
     async def embed(self, texts: Iterable[str]) -> list[list[float]]:
-        client = self._client()
+        text_list = list(texts)
+        if not text_list:
+            return []
+
+        # Embedding cache: hash-keyed lookup, only call OpenAI for misses.
+        cached: dict[int, list[float]] = {}
+        if os.getenv("USE_EMBEDDING_CACHE", "true").lower() == "true":
+            try:
+                from core.semantic_cache import EmbeddingCache
+
+                cached = await EmbeddingCache.get_many(self.deployment, text_list)
+            except Exception:
+                logger.exception("embedding cache lookup failed; computing all")
+
+        miss_indices = [i for i in range(len(text_list)) if i not in cached]
+        if not miss_indices:
+            return [cached[i] for i in range(len(text_list))]
+
+        miss_texts = [text_list[i] for i in miss_indices]
         if not (os.getenv("AZURE_OPENAI_SERVICE") or os.getenv("OPENAI_API_KEY")):
-            return [[0.0] * 8 for _ in texts]
-        resp = await client.embeddings.create(model=self.deployment, input=list(texts))
-        return [d.embedding for d in resp.data]
+            # Local / unset: dummy vectors so the pipeline runs.
+            new_vecs = [[0.0] * 8 for _ in miss_texts]
+        else:
+            client = self._client()
+            resp = await client.embeddings.create(model=self.deployment, input=miss_texts)
+            new_vecs = [d.embedding for d in resp.data]
+
+        if os.getenv("USE_EMBEDDING_CACHE", "true").lower() == "true":
+            try:
+                from core.semantic_cache import EmbeddingCache
+
+                await EmbeddingCache.set_many(self.deployment, miss_texts, new_vecs)
+            except Exception:
+                logger.exception("embedding cache store failed")
+
+        result: list[list[float]] = [[] for _ in text_list]
+        for i, vec in cached.items():
+            result[i] = vec
+        for idx, vec in zip(miss_indices, new_vecs):
+            result[idx] = vec
+        return result
 
 
 class ImageEmbeddings:

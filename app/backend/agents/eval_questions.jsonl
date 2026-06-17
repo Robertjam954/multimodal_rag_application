@@ -1,0 +1,5 @@
+{"query": "How do I cut my LLM bill on a high-volume RAG app?"}
+{"query": "What's a sensible way to evaluate a RAG system without a labelled dataset?"}
+{"query": "Why would I add a verifier between retrieval and generation?"}
+{"query": "When does GraphRAG beat plain chunk-based retrieval?"}
+{"query": "What are the must-have guardrails when wiring an NL-to-SQL agent?"}
