@@ -35,4 +35,5 @@ class Chunk:
     embedding: list[float] | None = None
     images: list[dict[str, Any]] = dataclasses.field(default_factory=list)
     category: str | None = None
+    source_type: str = "doc"
     acls: list[str] = dataclasses.field(default_factory=list)

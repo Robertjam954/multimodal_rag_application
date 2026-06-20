@@ -1,0 +1,64 @@
+# Curated Microsoft Learn URLs for Azure AI / Foundry / OpenAI ingestion.
+# One URL per line. Lines starting with # are ignored.
+# Edit freely; LearnStrategy fetches each URL once and skips failures.
+
+# Azure AI Foundry
+https://learn.microsoft.com/en-us/azure/ai-foundry/what-is-azure-ai-foundry
+https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/architecture
+https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/create-projects
+https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/sdk-overview
+https://learn.microsoft.com/en-us/azure/ai-foundry/agents/overview
+https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/tools/sharepoint-grounding
+https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/tools/mcp
+https://learn.microsoft.com/en-us/azure/ai-foundry/agents/quickstart
+https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/evaluate-generative-ai-app
+https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/evaluate-results
+
+# Azure OpenAI in AI Foundry Models
+https://learn.microsoft.com/en-us/azure/ai-services/openai/overview
+https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models
+https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/responses
+https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/file-search
+https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/function-calling
+https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/embeddings
+https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/use-your-data
+https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
+
+# Azure AI Services + Speech / Document Intelligence / Language
+https://learn.microsoft.com/en-us/azure/ai-services/what-are-ai-services
+https://learn.microsoft.com/en-us/azure/ai-services/speech-service/overview
+https://learn.microsoft.com/en-us/azure/ai-services/speech-service/get-started-speech-to-text
+https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/overview
+https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/prebuilt/layout
+https://learn.microsoft.com/en-us/azure/ai-services/language-service/personally-identifiable-information/overview
+https://learn.microsoft.com/en-us/azure/ai-services/content-safety/overview
+
+# Azure AI Search (retrieval / vector / agentic)
+https://learn.microsoft.com/en-us/azure/search/search-what-is-azure-search
+https://learn.microsoft.com/en-us/azure/search/vector-search-overview
+https://learn.microsoft.com/en-us/azure/search/hybrid-search-overview
+https://learn.microsoft.com/en-us/azure/search/semantic-search-overview
+https://learn.microsoft.com/en-us/azure/search/search-agentic-retrieval-concept
+
+# Azure CLI reference (per user request)
+https://learn.microsoft.com/en-us/cli/azure/?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/get-started-with-azure-cli
+https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+https://learn.microsoft.com/en-us/cli/azure/account?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/ad?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/cognitiveservices?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/search?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/storage?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/cosmosdb?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/group?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/role?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/keyvault?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/containerapp?view=azure-cli-latest
+https://learn.microsoft.com/en-us/cli/azure/functionapp?view=azure-cli-latest
+
+# Third-party docs (LearnDocParser falls back to generic main/article extraction).
+# Note: this is an index of PDFs, not a single article. The HTML listing is what
+# gets indexed; to ingest the linked PDFs themselves, crawl and feed them to the
+# files source instead.
+https://www.servicenow.com/docs/r/pdf-archive/pdf-archive.html
+https://diamant-ai.com/blog

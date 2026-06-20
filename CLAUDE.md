@@ -237,7 +237,9 @@ Quart backend (Container Apps)
   ├── Azure AI Content Safety (inference-time + ingestion-time)
   ├── Azure AI Language (PII redaction)
   ├── Azure Blob Storage / ADLS Gen2 (raw + figures + per-user paths)
-  ├── Azure Cosmos DB (SQL: chat history; Gremlin: knowledge graph)
+  ├── Azure Cosmos DB (NoSQL: JSON docs + chat history; Gremlin: knowledge graph)
+  ├── Azure Managed Redis (semantic cache + short-term memory + app cache/rate-limit)
+  ├── Azure DB for PostgreSQL (pgvector + azure_ai: secondary relational + vector analytics)
   ├── Azure AI Foundry Hub + Project (adversarial sim, hosted agents)
   ├── Application Insights (OTel sink)
   └── Key Vault
@@ -281,6 +283,25 @@ Quart backend (Container Apps)
 3. Partial transcripts stream back to UI for live display.
 4. On finalization: `graph_indexer` writes `Utterance` + `Recording` + `Topic` nodes; transcript text joins the standard text-processing pipeline.
 5. Audio file lands in Blob; playback in UI is timestamp-synced to citations.
+
+### Data and storage tier (canonical database choices)
+
+Authoritative mapping of which datastore owns what. When adding a feature, put its data in the store named here - do not stand up a parallel store for the same concern. Vector search has three capable engines in the wider stack (AI Search, Cosmos, pgvector); for **this** app **Azure AI Search is primary** and the others are scoped as below.
+
+| Concern | Store / service | What it owns | Notes |
+|---|---|---|---|
+| **Primary vector search + retrieval** | **Azure AI Search** | chunk embeddings + text + semantic ranker (+ optional Knowledge Agent) | Canonical RAG retrieval. `prepdocslib/searchmanager.py`, `approaches/chatreadretrieveread.py`. |
+| Citation vector store | OpenAI Responses `file_search` | per-file vector store for citation-grade spans | Kept in sync with AI Search by `prepdocs.sh`. External (OpenAI), not Azure. |
+| **JSON documents + conversation history** | **Azure Cosmos DB for NoSQL** | chat sessions/messages, feedback, run + eval JSON, ingestion manifests | `chat_history/cosmosdb.py`. Durable source of truth for conversations. Cosmos native vector index exists but is **not** the primary vector path here. |
+| Knowledge graph | Azure Cosmos DB for Apache Gremlin | entities / edges / community nodes | `graphrag/cosmos_gremlin.py`. Same Cosmos account, Gremlin API. |
+| **In-memory cache + working memory** | **Azure Managed Redis** | (1) semantic / LLM-response cache, (2) short-term conversation + agent scratch memory, (3) app cache: session tokens, rate-limit counters, feature flags | New tier. Ephemeral / TTL'd only. Cosmos remains the durable record; never treat Redis as the source of truth. |
+| **Secondary relational + vector analytics** | **Azure Database for PostgreSQL Flexible Server** (`pgvector` + `azure_ai`) | structured analytics tables + embeddings for SQL/analytics workloads (SchemaFlow clinical warehouse, cross-corpus joins) | Secondary to AI Search. `azure_ai` extension generates embeddings in-DB via `azure_openai.create_embeddings(...)`; store in a `vector` column; HNSW index for ANN. Shared design with the biomed repo (`agentic_research_team`). |
+| Files / blobs | Azure Blob Storage / ADLS Gen2 | raw PDFs, audio, figures, per-user uploads | `prepdocslib/blobmanager.py`. |
+| Multimodal embedding **producer** (not a store) | Azure OpenAI `text-embedding-3-large` + Azure AI Vision | text + image vectors written into AI Search (and optionally pgvector) | The single embedding producer for both modalities; keeps text and image vectors dimensionally consistent per index. |
+
+**Redis responsibilities** (all three enabled): semantic cache keyed by embedding similarity to short-circuit repeat LLM calls; short-term working memory holding the active session's turn context + agent scratchpad (durable history still flushed to Cosmos); and operational app cache (rate-limit counters per `RATE_LIMIT_PER_MIN`, session tokens, feature flags). Everything in Redis carries a TTL.
+
+**pgvector scope**: secondary. It backs relational+vector analytics (the SchemaFlow warehouse and any cross-corpus analytical joins), not the main chat retrieval path. Do not migrate primary RAG retrieval off AI Search without updating this section first.
 
 ---
 
@@ -380,11 +401,15 @@ Key vars:
 | `AZURE_CONTENTSAFETY_ENDPOINT` | inference-time safety |
 | `AZURE_LANGUAGE_ENDPOINT` | PII redaction |
 | `AZURE_STORAGE_ACCOUNT` `AZURE_STORAGE_CONTAINER` `AZURE_USER_STORAGE_ACCOUNT` | Blob / ADLS Gen2 |
-| `AZURE_COSMOSDB_ACCOUNT` `AZURE_COSMOSDB_CHAT_DATABASE` `AZURE_COSMOSDB_GRAPH_DATABASE` | Chat + graph |
+| `AZURE_COSMOSDB_ACCOUNT` `AZURE_COSMOSDB_CHAT_DATABASE` `AZURE_COSMOSDB_GRAPH_DATABASE` | Cosmos: JSON docs + chat history + graph |
+| `AZURE_REDIS_HOST` `AZURE_REDIS_PORT` | Azure Managed Redis endpoint (AAD auth; no key in env) |
+| `AZURE_POSTGRES_HOST` `AZURE_POSTGRES_DATABASE` `AZURE_POSTGRES_USER` | PostgreSQL Flexible Server (pgvector + azure_ai) |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | OTel sink |
 | `USE_MULTIMODAL` | Image extraction + vision |
 | `USE_AGENTIC_KNOWLEDGEBASE` | AI Search knowledge agent |
 | `USE_GRAPHRAG` | Cosmos graph retrieval |
+| `USE_REDIS_CACHE` | Azure Managed Redis: semantic cache + working memory + app cache |
+| `USE_POSTGRES_VECTOR` | PostgreSQL pgvector + azure_ai secondary analytics |
 | `USE_VERIFIER` | Verifier pass |
 | `USE_VOICE_DEMO` `USE_SQL_DEMO` | Demo route flags |
 | `USE_CONTENT_SAFETY` `USE_PII_REDACTION` | Safety toggles |
@@ -466,6 +491,8 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 - **Multimodal model swap:** if changing the chat model, confirm it supports image input (`gpt-4o`, `gpt-4o-mini`, `gpt-4.1-mini`).
 - **GitHub Pages base URL:** `DEMO_URL` is injected at build time by `.github/workflows/pages.yml`. Local Jekyll preview uses a placeholder.
 - **iCloud dataless files:** anything under `~/Documents/` may be evicted - copy or `dd` materialize before ingestion.
+- **Redis is ephemeral:** everything in Azure Managed Redis is TTL'd cache / working memory. Cosmos is the durable source of truth for conversations - never reconstruct history from Redis alone.
+- **pgvector is secondary:** primary RAG retrieval stays on Azure AI Search. Use Postgres pgvector only for relational + analytical vector workloads; do not split the chat corpus across both.
 - **No em dashes anywhere.** Use single hyphen `-` only.
 - **No end-of-turn recaps in chat-app responses** (user preference applies to dev workflow only, not application code).
 
@@ -515,7 +542,9 @@ cd ../.. && pytest tests/e2e/e2e.py
 | Azure AI Content Safety | runtime prompt/completion filtering | `safety/content_safety.py` |
 | Azure AI Language | PII redaction at ingestion | `safety/pii.py` |
 | Cosmos Gremlin | live knowledge graph | `graphrag/cosmos_gremlin.py` |
-| Cosmos SQL | chat history | `chat_history/cosmosdb.py` |
+| Cosmos NoSQL | JSON docs + chat history | `chat_history/cosmosdb.py` |
+| Azure Managed Redis | semantic cache + short-term memory + app cache/rate-limit | `core/cache.py` (planned), `core/sessionhelper.py` |
+| PostgreSQL (pgvector + azure_ai) | secondary relational + vector analytics | `core/pgvector.py` (planned), `approaches/sql_schemaflow_approach.py` |
 | Blob / ADLS Gen2 | raw + processed + user uploads | `prepdocslib/blobmanager.py` |
 | AI Foundry Project | adversarial sim, hosted agents | `evals/safety_evaluation.py`, `agents/foundry_client.py` |
 | OpenAI Responses file_search | citations | `agents/tools.py:file_search` |

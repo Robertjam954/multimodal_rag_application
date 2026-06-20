@@ -13,6 +13,7 @@ def search_index_schema(name: str, multimodal: bool = False) -> dict[str, Any]:
         {"name": "id", "type": "Edm.String", "key": True},
         {"name": "content", "type": "Edm.String", "searchable": True},
         {"name": "category", "type": "Edm.String", "filterable": True, "facetable": True},
+        {"name": "source_type", "type": "Edm.String", "filterable": True, "facetable": True},
         {"name": "sourcefile", "type": "Edm.String", "filterable": True},
         {"name": "sourcepage", "type": "Edm.String"},
         {"name": "storageUrl", "type": "Edm.String"},

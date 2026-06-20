@@ -54,6 +54,7 @@ class SearchManager:
                 "id": c.id,
                 "content": c.content,
                 "category": c.category,
+                "source_type": c.source_type,
                 "sourcefile": c.source_file,
                 "sourcepage": str(c.source_page) if c.source_page else None,
                 "storageUrl": c.storage_url,
