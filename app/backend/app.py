@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any, AsyncGenerator
 
 from azure.identity.aio import AzureDeveloperCliCredential, DefaultAzureCredential, ManagedIdentityCredential
-from quart import Blueprint, Quart, abort, current_app, jsonify, request, send_file, send_from_directory
+from quart import Blueprint, Quart, abort, current_app, jsonify, request, send_file, send_from_directory, websocket
 from quart_cors import cors
 
 from config import (
@@ -221,6 +221,32 @@ async def content(filename: str):
     if stream is None:
         return error_response("not found", "not_found", 404)
     return await send_file(io.BytesIO(stream), attachment_filename=filename)
+
+
+@bp.websocket("/voice/stream")
+async def voice_stream():
+    """Proxy a browser PCM16 audio stream to Azure Voice Live and relay transcripts back."""
+    if not current_app.config[CONFIG_VOICE_DEMO_ENABLED]:
+        await websocket.close(1008, "voice demo disabled")
+        return
+    from voice.voice_live import run_bridge
+
+    await websocket.accept()
+    await run_bridge(websocket)
+
+
+@bp.route("/voice/clean", methods=["POST"])
+@ratelimited()
+async def voice_clean():
+    """Best-effort LLM cleanup of a raw transcript; returns raw text on any failure."""
+    if not current_app.config[CONFIG_VOICE_DEMO_ENABLED]:
+        return error_response("voice demo disabled", "not_enabled", 404)
+    body = await request.get_json()
+    raw = (body or {}).get("text", "")
+    from voice.transcript_cleaner import clean_transcript
+
+    cleaned = await clean_transcript(raw)
+    return jsonify({"raw": raw, "cleaned": cleaned})
 
 
 async def _configure_tracing(app: Quart) -> None:

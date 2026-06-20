@@ -8,8 +8,8 @@ https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/architecture
 https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/create-projects
 https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/sdk-overview
 https://learn.microsoft.com/en-us/azure/ai-foundry/agents/overview
-https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/tools/sharepoint-grounding
-https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/tools/mcp
+https://learn.microsoft.com/en-us/azure/ai-foundry/agents/how-to/tools/sharepoint
+https://learn.microsoft.com/en-us/azure/ai-foundry/agents/how-to/tools/model-context-protocol
 https://learn.microsoft.com/en-us/azure/ai-foundry/agents/quickstart
 https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/evaluate-generative-ai-app
 https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/evaluate-results
@@ -20,7 +20,7 @@ https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models
 https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/responses
 https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/file-search
 https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/function-calling
-https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/embeddings
+https://learn.microsoft.com/en-us/azure/ai-foundry/openai/concepts/understand-embeddings
 https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/use-your-data
 https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/content-filter
 

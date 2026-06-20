@@ -6,6 +6,7 @@ uvicorn[standard]>=0.30
 uvloop>=0.19; sys_platform != 'win32'
 
 # Azure
+aiohttp>=3.10  # Voice Live websocket bridge (server-side proxy to Azure Speech)
 azure-identity>=1.17
 azure-search-documents>=11.6.0b4
 azure-ai-documentintelligence>=1.0.0
