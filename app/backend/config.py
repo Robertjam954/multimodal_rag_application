@@ -15,6 +15,7 @@ CONFIG_AUTH_CLIENT = "auth_client"
 
 CONFIG_CHAT_APPROACH = "chat_approach"
 CONFIG_MULTIAGENT_APPROACH = "multiagent_approach"
+CONFIG_HIERARCHICAL_APPROACH = "hierarchical_approach"
 CONFIG_SQL_APPROACH = "sql_approach"
 
 # Feature flags

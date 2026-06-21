@@ -59,79 +59,23 @@ class MultiAgentApproach(Approach):
         context: dict[str, Any] | None = None,
         session_state: str | None = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
-        overrides = dict((context or {}).get("overrides", {}))
-        question = messages[-1]["content"] if messages else ""
+        # Shared pre-flight: cache lookup, tutor persona, query enhancement,
+        # safety screen, routing. Yields live SSE events plus a final control event.
+        from approaches._agentic_preamble import PREAMBLE_DONE, run_preamble
 
-        # Semantic cache lookup (no-op if REDIS_URL unset or embed fails)
-        question_embedding: list[float] | None = None
-        if (
-            question
-            and os.getenv("USE_SEMANTIC_CACHE", "true").lower() == "true"
-            and not overrides.get("skip_cache")
-        ):
-            try:
-                from core.semantic_cache import SemanticCache
-                from prepdocslib.embeddings import TextEmbeddings
+        pre: dict[str, Any] = {}
+        async for evt in run_preamble(messages, context, self.prompt_manager):
+            if evt.get("event") == PREAMBLE_DONE:
+                pre = evt["data"]
+                break
+            yield evt
+        if pre.get("terminate"):
+            return
 
-                emb = await TextEmbeddings().embed([question])
-                if emb and emb[0]:
-                    question_embedding = emb[0]
-                    acl = (context or {}).get("auth_claims")
-                    hit = await SemanticCache.lookup(question_embedding, acl=acl)
-                    if hit is not None:
-                        for c in hit.citations:
-                            yield {"event": "citation", "data": c}
-                        if hit.answer:
-                            yield {"event": "token", "data": hit.answer}
-                        for cl in []:
-                            yield {"event": "claim", "data": cl}
-                        if hit.verdict is not None:
-                            yield {"event": "verdict", "data": hit.verdict}
-                        if hit.followups:
-                            yield {"event": "followups", "data": hit.followups}
-                        yield {"event": "cache_hit", "data": {"model": hit.model, "ts": hit.ts}}
-                        return
-            except Exception:
-                logger.exception("semantic cache lookup failed; proceeding without cache")
-
-        # Tutor persona: route the answerer at the dedicated tutor template
-        if os.getenv("USE_TUTOR_MODE", "true").lower() == "true" and "answerer_prompt" not in overrides:
-            overrides["answerer_prompt"] = "tutor.system.jinja2"
-
-        # Query enhancement: expand short or acronym-heavy queries before retrieval
-        if (
-            os.getenv("USE_QUERY_ENHANCEMENT", "true").lower() == "true"
-            and len(question.split()) <= 5
-            and self.prompt_manager is not None
-        ):
-            try:
-                from agents._llm import complete
-
-                enhancement_prompt = self.prompt_manager.render("query_enhancement.system.jinja2")
-                enhanced = (await complete(system=enhancement_prompt, user=question, role="chat")).strip()
-                if enhanced and enhanced != question:
-                    yield {"event": "query_enhanced", "data": {"original": question, "enhanced": enhanced}}
-                    question = enhanced
-            except Exception:
-                logger.exception("query enhancement failed; using original question")
-
-        # Content safety screen (optional)
-        if os.getenv("USE_CONTENT_SAFETY", "false").lower() == "true":
-            try:
-                from safety.content_safety import screen_input
-
-                safe = await screen_input(question)
-                if not safe.ok:
-                    yield {"event": "blocked", "data": {"reason": safe.reason}}
-                    return
-            except Exception:
-                logger.exception("content safety screen failed; proceeding")
-
-        # Router
-        from agents.router import route
-
-        route_label = await route(question=question, messages=messages, prompt_manager=self.prompt_manager)
-        yield {"event": "route", "data": route_label}
+        question = pre["question"]
+        overrides = pre["overrides"]
+        question_embedding = pre.get("question_embedding")
+        route_label = pre.get("route")
 
         # SQL branch
         if route_label == "sql":

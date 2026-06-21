@@ -32,6 +32,7 @@ param searchIndexName string = 'rag-index'
 param useMultimodal bool = false
 param useGraphRag bool = true
 param useVerifier bool = true
+param useHierarchicalAgents bool = false
 param useVoiceDemo bool = true
 param useSqlDemo bool = true
 param useContentSafety bool = false

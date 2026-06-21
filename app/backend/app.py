@@ -35,6 +35,7 @@ from config import (
     CONFIG_FEEDBACK_ENABLED,
     CONFIG_GLOBAL_BLOB_MANAGER,
     CONFIG_GRAPHRAG_ENABLED,
+    CONFIG_HIERARCHICAL_APPROACH,
     CONFIG_INGESTER,
     CONFIG_LANGSMITH_CLIENT,
     CONFIG_MULTIAGENT_APPROACH,
@@ -132,6 +133,13 @@ async def auth_setup():
     return jsonify(auth.get_auth_setup_for_client())
 
 
+def _chat_approach():
+    """Select the hierarchical team orchestration when opted in, else the flat loop."""
+    if os.getenv("USE_HIERARCHICAL_AGENTS", "false").lower() == "true":
+        return current_app.config[CONFIG_HIERARCHICAL_APPROACH]
+    return current_app.config[CONFIG_MULTIAGENT_APPROACH]
+
+
 @bp.route("/chat", methods=["POST"])
 @ratelimited()
 @authenticated
@@ -139,7 +147,7 @@ async def chat_stream():
     body = await request.get_json()
     if not body:
         return error_response("missing body", "bad_request", 400)
-    approach = current_app.config[CONFIG_MULTIAGENT_APPROACH]
+    approach = _chat_approach()
 
     async def event_stream() -> AsyncGenerator[bytes, None]:
         try:
@@ -164,7 +172,7 @@ async def chat_nonstream():
     body = await request.get_json()
     if not body:
         return error_response("missing body", "bad_request", 400)
-    approach = current_app.config[CONFIG_MULTIAGENT_APPROACH]
+    approach = _chat_approach()
     result = await approach.run(
         messages=body.get("messages", []),
         context=body.get("context", {}),
@@ -283,6 +291,7 @@ async def _setup_clients(app: Quart) -> None:
 
     # Approaches (lazily import to keep cold start cheap during tests)
     from approaches.multiagent_approach import MultiAgentApproach
+    from approaches.hierarchical_multiagent_approach import HierarchicalMultiAgentApproach
     from approaches.chatreadretrieveread import ChatReadRetrieveReadApproach
     from approaches.sql_schemaflow_approach import SchemaFlowSQLApproach
     from approaches.promptmanager import PromptManager
@@ -290,6 +299,7 @@ async def _setup_clients(app: Quart) -> None:
     pm = PromptManager()
     app.config[CONFIG_CHAT_APPROACH] = ChatReadRetrieveReadApproach(prompt_manager=pm)
     app.config[CONFIG_MULTIAGENT_APPROACH] = MultiAgentApproach(prompt_manager=pm)
+    app.config[CONFIG_HIERARCHICAL_APPROACH] = HierarchicalMultiAgentApproach(prompt_manager=pm)
     app.config[CONFIG_SQL_APPROACH] = SchemaFlowSQLApproach(prompt_manager=pm)
 
     # Flags from env
