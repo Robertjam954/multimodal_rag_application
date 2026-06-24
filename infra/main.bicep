@@ -94,11 +94,17 @@ module backend 'app/backend.bicep' = {
     appInsightsConnectionString: appInsights.outputs.connectionString
     containerRegistryName: acr.outputs.name
     env: [
-      { name: 'AZURE_OPENAI_ENDPOINT', value: foundryServicesEndpoint }
+      // Chat / Responses -> Foundry PROJECT endpoint (ai.azure.com audience)
+      { name: 'AZURE_OPENAI_ENDPOINT', value: foundryProjectEndpoint }
+      { name: 'AZURE_OPENAI_AAD_SCOPE', value: 'https://ai.azure.com/.default' }
       { name: 'AZURE_AI_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
+      { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
+      // Embeddings -> Foundry ACCOUNT endpoint (cognitiveservices audience; project path 404s for embeddings)
+      { name: 'AZURE_OPENAI_EMBEDDING_ENDPOINT', value: foundryServicesEndpoint }
+      { name: 'AZURE_OPENAI_EMBEDDING_AAD_SCOPE', value: 'https://cognitiveservices.azure.com/.default' }
       { name: 'AZURE_OPENAI_USE_AAD', value: 'true' }
-      { name: 'AZURE_OPENAI_AAD_SCOPE', value: 'https://cognitiveservices.azure.com/.default' }
       { name: 'AZURE_OPENAI_CHATGPT_DEPLOYMENT', value: chatGptDeploymentName }
+      { name: 'AZURE_AI_MODEL_DEPLOYMENT_NAME', value: chatGptDeploymentName }
       { name: 'AZURE_OPENAI_EMBEDDING_DEPLOYMENT', value: embeddingDeploymentName }
       { name: 'AZURE_OPENAI_EMB_DEPLOYMENT', value: embeddingDeploymentName }
       { name: 'DOCUMENT_RETRIEVER', value: 'cosmos' }
