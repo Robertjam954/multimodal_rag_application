@@ -13,15 +13,24 @@ chat_history_cosmosdb_bp = Blueprint("chat_history_cosmosdb", __name__, url_pref
 
 
 def _client():
+    """Keyless Cosmos client (Entra ID). Managed identity in prod, az login in dev."""
     try:
         from azure.cosmos.aio import CosmosClient
+        from azure.identity.aio import DefaultAzureCredential, ManagedIdentityCredential
     except Exception:
         return None
     endpoint = os.getenv("AZURE_COSMOSDB_ENDPOINT")
-    key = os.getenv("AZURE_COSMOSDB_KEY")
-    if not (endpoint and key):
+    if not endpoint:
         return None
-    return CosmosClient(endpoint, credential=key)
+    if os.getenv("RUNNING_IN_PRODUCTION", "false").lower() == "true":
+        cred = (
+            ManagedIdentityCredential(client_id=os.getenv("AZURE_CLIENT_ID"))
+            if os.getenv("AZURE_CLIENT_ID")
+            else DefaultAzureCredential()
+        )
+    else:
+        cred = DefaultAzureCredential()
+    return CosmosClient(endpoint, credential=cred)
 
 
 @chat_history_cosmosdb_bp.route("/", methods=["GET"])

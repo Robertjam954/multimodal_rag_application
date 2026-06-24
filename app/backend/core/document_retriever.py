@@ -174,6 +174,10 @@ def get_retriever() -> Retriever:
     name = os.getenv("DOCUMENT_RETRIEVER", "redis_notes").lower()
     if name == "redis_notes":
         return RedisNotesRetriever()
+    if name == "cosmos":
+        from core.cosmos_vector_retriever import CosmosVectorRetriever
+
+        return CosmosVectorRetriever()
     raise ValueError(f"unknown DOCUMENT_RETRIEVER: {name!r}")
 
 

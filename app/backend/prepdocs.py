@@ -40,7 +40,13 @@ async def main() -> int:
 
     cred = AzureDeveloperCliCredential() if os.getenv("RUNNING_IN_PRODUCTION", "false").lower() != "true" else DefaultAzureCredential()
     blob = BlobManager(credential=cred, account=os.getenv("AZURE_STORAGE_ACCOUNT", ""), container=os.getenv("AZURE_STORAGE_CONTAINER", "content"))
-    search = SearchManager(credential=cred)
+    # Vector store selected by DOCUMENT_RETRIEVER: "cosmos" -> Cosmos NoSQL vector container; else Azure AI Search.
+    if os.getenv("DOCUMENT_RETRIEVER", "redis_notes").lower() == "cosmos":
+        from prepdocslib.cosmoswriter import CosmosWriter
+
+        search: Any = CosmosWriter(credential=cred)
+    else:
+        search = SearchManager(credential=cred)
     embeddings = TextEmbeddings()
 
     if args.removeall:
