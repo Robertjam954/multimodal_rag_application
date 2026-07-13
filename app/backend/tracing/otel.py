@@ -18,6 +18,22 @@ def configure(app) -> None:
         return
 
     configure_azure_monitor()
+
+    # Break the telemetry feedback loop. The Azure Monitor exporter ships logs by
+    # making HTTP calls via azure.core, and azure.core logs every call at INFO.
+    # configure_azure_monitor() attaches a log handler to the ROOT logger, so those
+    # exporter HTTP logs get re-exported, which makes more HTTP calls, ad infinitum —
+    # pegging a thread, flooding App Insights, and starving the uvicorn event loop so
+    # it never accepts connections. Silence the exporter's own plumbing so it isn't
+    # re-ingested.
+    for _noisy in (
+        "azure.core.pipeline.policies.http_logging_policy",
+        "azure.monitor.opentelemetry.exporter",
+        "azure.identity",
+        "urllib3.connectionpool",
+    ):
+        logging.getLogger(_noisy).setLevel(logging.WARNING)
+
     AioHttpClientInstrumentor().instrument()
     HTTPXClientInstrumentor().instrument()
     OpenAIInstrumentor().instrument()

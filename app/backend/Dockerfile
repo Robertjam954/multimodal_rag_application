@@ -2,7 +2,7 @@
 FROM node:20-slim AS frontend
 WORKDIR /frontend
 COPY app/frontend/package.json app/frontend/package-lock.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 COPY app/frontend/ ./
 RUN npm run build
 
@@ -25,6 +25,8 @@ COPY app/backend/requirements.txt /tmp/requirements.txt
 COPY app/backend/requirements.in /tmp/requirements.in
 RUN pip install --no-cache-dir -r /tmp/requirements.in
 
+# CACHEBUST forces the source COPY layer to rebuild when its value changes.
+ARG CACHEBUST=0
 COPY app/backend /app
 COPY --from=frontend /frontend/build /app/static
 

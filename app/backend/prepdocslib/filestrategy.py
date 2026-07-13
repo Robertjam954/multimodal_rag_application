@@ -100,11 +100,25 @@ class FileStrategy(Strategy):
 
 
 class UploadUserFileStrategy:
-    """Per-session upload: lands in user-scoped Blob path + a per-session search index suffix."""
+    """Per-session upload: lands in a user-scoped Blob path, then embeds + indexes
+    into the active vector store. With `DOCUMENT_RETRIEVER=cosmos` it writes to the
+    Cosmos NoSQL `documents` container (same store the chat retriever reads); else it
+    falls back to Azure AI Search. Embeddings use the account-endpoint AAD client
+    (`core.embeddings_client`), the one path proven to serve embeddings."""
 
     def __init__(self, blob_manager: BlobManager | None, search_service: str | None, search_index: str | None, credential: Any | None) -> None:
         self.blob = blob_manager
-        self.search = SearchManager(service=search_service, index=search_index, credential=credential) if search_service else None
+        self.use_cosmos = os.getenv("DOCUMENT_RETRIEVER", "redis_notes").lower() == "cosmos"
+        if self.use_cosmos:
+            from prepdocslib.cosmoswriter import CosmosWriter
+
+            self.writer: Any = CosmosWriter(credential=credential)
+        else:
+            self.writer = (
+                SearchManager(service=search_service, index=search_index, credential=credential)
+                if search_service
+                else None
+            )
 
     async def ingest_user_upload(self, filename: str, data: bytes, oid: str | None = None) -> dict[str, Any]:
         oid = oid or "anon"
@@ -126,7 +140,16 @@ class UploadUserFileStrategy:
                         acls=[oid],
                     )
                 )
-        if self.search and chunks:
-            await self.search.upsert(chunks)
+
+        # Embed every chunk so it is retrievable (Cosmos vector search needs the vector).
+        if chunks:
+            from core.embeddings_client import embed_texts
+
+            embs = await embed_texts([c.content for c in chunks])
+            for c, e in zip(chunks, embs):
+                c.embedding = e
+
+        if self.writer and chunks:
+            await self.writer.upsert(chunks)
         await push_to_file_search(chunks)
         return {"filename": filename, "url": url, "chunks": len(chunks)}
