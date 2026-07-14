@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Button, Textarea, Tab, TabList, TabValue, SelectTabData, SelectTabEvent } from "@fluentui/react-components";
+import { useEffect, useRef, useState } from "react";
 import { streamChat } from "../../api/stream";
 import type { ChatAppRequestOverrides, ChatMessage, Citation, Claim } from "../../api/models";
 import Answer from "../../components/Answer/Answer";
@@ -13,6 +12,16 @@ import GraphView from "../../components/GraphView/GraphView";
 import Feedback from "../../components/Feedback/Feedback";
 import { formatUSD } from "../../lib/cost";
 
+const SAMPLES = [
+    "What is transfer learning?",
+    "How does fine-tuning differ from feature extraction?",
+    "Summarize the key ideas in the indexed papers",
+    "What skills does the AZ-204 exam measure?",
+];
+
+const TABS = ["Answer", "Thought process", "Supporting content", "Knowledge graph"] as const;
+type TabName = (typeof TABS)[number];
+
 export default function Chat() {
     const [input, setInput] = useState("");
     const [history, setHistory] = useState<ChatMessage[]>([]);
@@ -24,7 +33,7 @@ export default function Chat() {
     const [route, setRoute] = useState<string>("");
     const [cost, setCost] = useState<{ est_usd?: number } | null>(null);
     const [busy, setBusy] = useState(false);
-    const [tab, setTab] = useState<TabValue>("answer");
+    const [tab, setTab] = useState<TabName>("Answer");
     const [overrides, setOverrides] = useState<ChatAppRequestOverrides>({
         top: 5,
         use_verifier: true,
@@ -33,10 +42,15 @@ export default function Chat() {
         reasoning_effort: "minimal",
         use_streaming: true,
     });
+    const scrollRef = useRef<HTMLDivElement>(null);
 
-    async function send() {
-        const q = input.trim();
-        if (!q) return;
+    useEffect(() => {
+        scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }, [history, answer]);
+
+    async function send(question?: string) {
+        const q = (question ?? input).trim();
+        if (!q || busy) return;
         const newHistory: ChatMessage[] = [...history, { role: "user", content: q }];
         setHistory(newHistory);
         setInput("");
@@ -49,6 +63,7 @@ export default function Chat() {
         setCost(null);
         setBusy(true);
 
+        let acc = "";
         try {
             await streamChat({ messages: newHistory, context: { overrides }, stream: true }, (evt) => {
                 switch (evt.event) {
@@ -56,7 +71,8 @@ export default function Chat() {
                         setRoute(String(evt.data));
                         break;
                     case "token":
-                        setAnswer((a) => a + String(evt.data ?? ""));
+                        acc += String(evt.data ?? "");
+                        setAnswer(acc);
                         break;
                     case "citation":
                         setCitations((c) => [...c, evt.data as Citation]);
@@ -77,54 +93,118 @@ export default function Chat() {
             });
         } finally {
             setBusy(false);
-            setHistory((h) => [...h, { role: "assistant", content: answer }]);
+            setHistory((h) => [...h, { role: "assistant", content: acc }]);
         }
     }
 
+    // The latest assistant answer renders as the rich bubble (tabs, citations),
+    // so drop it from the plain-bubble transcript to avoid showing it twice.
+    const display = history.filter((m, i) => !(answer && i === history.length - 1 && m.role === "assistant"));
+    const hasConversation = history.length > 0 || busy;
+
     return (
-        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 16 }}>
-            <aside>
+        <div className="page chat-layout">
+            <aside className="card card-pad">
+                <h3 className="section-title">Retrieval settings</h3>
                 <Settings overrides={overrides} onChange={setOverrides} />
             </aside>
-            <section>
-                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                    <VerifierBadge verdict={verdict} />
-                    {route ? <span style={{ fontSize: 12, opacity: 0.7 }}>route: {route}</span> : null}
-                    {cost?.est_usd != null ? <span style={{ fontSize: 12, opacity: 0.7 }}>est: {formatUSD(cost.est_usd)}</span> : null}
-                </div>
-                <TabList selectedValue={tab} onTabSelect={(_: SelectTabEvent, d: SelectTabData) => setTab(d.value)}>
-                    <Tab value="answer">Answer</Tab>
-                    <Tab value="thought">Thought process</Tab>
-                    <Tab value="support">Supporting content</Tab>
-                    <Tab value="graph">Knowledge graph</Tab>
-                </TabList>
-                <div style={{ marginTop: 12 }}>
-                    {tab === "answer" && (
+
+            <section className="card chat-panel">
+                <div ref={scrollRef} className="transcript">
+                    {!hasConversation ? (
+                        <div className="empty-hero">
+                            <h1>
+                                What do you want to <span className="hl">learn</span> today?
+                            </h1>
+                            <p>
+                                Ask about the indexed papers - answers are retrieved from a vector store, cited to the
+                                page, and checked claim-by-claim by a verifier agent.
+                            </p>
+                            <div className="samples">
+                                {SAMPLES.map((s) => (
+                                    <button key={s} className="chip" onClick={() => send(s)}>
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
                         <>
-                            <Answer text={answer} claims={claims} />
-                            <Citations citations={citations} />
-                            <FollowUps items={followups} onPick={setInput} />
-                            <Feedback />
+                            {display.map((m, i) =>
+                                m.role === "user" ? (
+                                    <div key={i} className="bubble-row user">
+                                        <div className="bubble user">{m.content}</div>
+                                    </div>
+                                ) : (
+                                    <div key={i} className="bubble-row">
+                                        <div className="bubble assistant">
+                                            <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{m.content}</p>
+                                        </div>
+                                    </div>
+                                )
+                            )}
+                            {(answer || busy) && (
+                                <div className="bubble-row">
+                                    <div className="bubble assistant">
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: answer ? 10 : 0 }}>
+                                            <VerifierBadge verdict={verdict} />
+                                            {route ? <span className="pill info">route: {route}</span> : null}
+                                            {cost?.est_usd != null ? <span className="pill info">est {formatUSD(cost.est_usd)}</span> : null}
+                                        </div>
+                                        {!answer && busy ? (
+                                            <div className="typing">
+                                                <span />
+                                                <span />
+                                                <span />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="seg" style={{ marginBottom: 12 }}>
+                                                    {TABS.map((t) => (
+                                                        <button key={t} className={tab === t ? "active" : ""} onClick={() => setTab(t)}>
+                                                            {t}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                {tab === "Answer" && (
+                                                    <>
+                                                        <Answer text={answer} claims={claims} />
+                                                        <Citations citations={citations} />
+                                                        <FollowUps items={followups} onPick={(q) => send(q)} />
+                                                        {!busy && <Feedback />}
+                                                    </>
+                                                )}
+                                                {tab === "Thought process" && (
+                                                    <ThoughtProcess
+                                                        steps={[
+                                                            { title: "route", description: route || "default" },
+                                                            { title: "retrieval", description: `${citations.length} chunks retrieved` },
+                                                            {
+                                                                title: "verifier",
+                                                                description: verdict
+                                                                    ? `${verdict.unsupported_claims} unsupported claims`
+                                                                    : "not run",
+                                                            },
+                                                        ]}
+                                                    />
+                                                )}
+                                                {tab === "Supporting content" && <SupportingContent citations={citations} />}
+                                                {tab === "Knowledge graph" && <GraphView data={{ nodes: [], edges: [] }} />}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
-                    {tab === "thought" && (
-                        <ThoughtProcess
-                            steps={[
-                                { title: "route", description: route },
-                                { title: "retrieval", description: `${citations.length} chunks` },
-                                { title: "verifier", description: verdict ? `${verdict.unsupported_claims} unsupported` : "n/a" },
-                            ]}
-                        />
-                    )}
-                    {tab === "support" && <SupportingContent citations={citations} />}
-                    {tab === "graph" && <GraphView data={{ nodes: [], edges: [] }} />}
                 </div>
-                <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
-                    <Textarea
+
+                <div className="composer">
+                    <textarea
                         value={input}
-                        onChange={(_, d) => setInput(d.value)}
-                        placeholder="Ask about the indexed PDFs and recordings..."
-                        style={{ flex: 1 }}
+                        rows={1}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Ask anything about the indexed documents..."
                         onKeyDown={(e) => {
                             if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
@@ -132,9 +212,9 @@ export default function Chat() {
                             }
                         }}
                     />
-                    <Button appearance="primary" disabled={busy} onClick={send}>
-                        Send
-                    </Button>
+                    <button className="btn-primary" disabled={busy || !input.trim()} onClick={() => send()}>
+                        {busy ? "Thinking..." : "Ask"}
+                    </button>
                 </div>
             </section>
         </div>
