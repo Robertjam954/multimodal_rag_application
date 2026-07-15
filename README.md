@@ -1,238 +1,219 @@
-# multimodal_rag_application
-
-Multimodal Retrieval-Augmented Generation system with PDF + voice ingestion, GraphRAG, a multi-agent QA loop gated by a Verifier, citation-grade evidence, SchemaFlow-style SQL agent, and full LangSmith + Azure Monitor tracing. Paired with a Jekyll portfolio site under `site/`.
-
-For Claude Code operating instructions, see [CLAUDE.md](CLAUDE.md).
-
 ---
-
-## Project Overview
-
-This project demonstrates an end-to-end production pattern for grounded conversational AI over private multimodal corpora. It combines Azure Document Intelligence and Azure Speech-to-Text for ingestion, GraphRAG and Azure AI Search for retrieval, the OpenAI Responses API `file_search` tool for citation-grade evidence, and a four-agent loop (Router -> Retriever -> Answerer -> Verifier) for answer generation. A separate SchemaFlow multi-agent planner demonstrates SQL literacy over a sample TCGA-like clinical warehouse. LangSmith and Azure Monitor instrument every span.
-
-The pipeline transitions from **Natural Language Space** (PDFs and recordings) to **Code Entity Space** (graph nodes, vector chunks, citation annotations, verifier verdicts, cost meters).
-
+name: Multimodal RAG Application
+description: Multimodal Retrieval-Augmented Generation over PDFs, audio, and web notes, with a verifier-gated multi-agent chat loop deployed on Azure Container Apps.
+languages:
+- python
+- typescript
+- bicep
+- azdeveloper
+products:
+- azure-openai
+- azure-cognitive-search
+- document-intelligence
+- azure-speech
+- azure-storage-accounts
+- azure-container-apps
+- azure-cosmos-db
+page_type: sample
+urlFragment: multimodal-rag-application
 ---
+<!-- YAML front-matter schema: https://review.learn.microsoft.com/en-us/help/contribute/samples/process/onboarding?branch=main#supported-metadata-fields-for-readmemd -->
 
-## Use Case Context
+# Multimodal RAG Application
 
-Knowledge workers (clinicians, researchers, analysts) consume long PDFs and recorded discussions and need verifiable answers traceable to a page or utterance. The primary safety endpoint is the **Unsupported-Claim Rate**: the proportion of generated sentences the Verifier cannot ground in retrieved evidence. The system targets < 2% on the golden eval set, refusing rather than fabricating on the remaining sentences.
+- [User story](#user-story)
+  - [About this repo](#about-this-repo)
+  - [When should you use this repo?](#when-should-you-use-this-repo)
+  - [Key features](#key-features)
+  - [Roadmap (target)](#roadmap-target)
+  - [Target end users](#target-end-users)
+  - [Industry scenario](#industry-scenario)
+- [Architecture](#architecture)
+  - [Outputs](#outputs)
+- [Deploy](#deploy)
+  - [Pre-requisites](#pre-requisites)
+  - [Products used](#products-used)
+  - [Required licenses](#required-licenses)
+  - [Pricing considerations](#pricing-considerations)
+  - [Deploy instructions](#deploy-instructions)
+  - [Testing the deployment](#testing-the-deployment)
+- [Supporting documentation](#supporting-documentation)
+- [Disclaimers](#disclaimers)
 
-| Demo | Inputs | Knowledge artifact | Question type |
-|---|---|---|---|
-| Scientific Paper Summarizer | PDFs | Paper / Section / Figure / Author / Citation graph | factual, multi-hop, summarization |
-| Voice Transcription Service | Mic + uploaded audio | Recording / Utterance / Speaker / Topic graph | factual, summarization, attribution |
-| QA Chatbot | Mixed corpus | Unified graph + dual vector stores | any of the above |
-| SchemaFlow SQL Demo | NL change request | Typed Parse / Impact / Plan / SQL artifacts | SQL change planning |
+## User story
 
----
+### About this repo
 
-## Pipeline Architecture
+A Retrieval-Augmented Generation system for asking verifiable questions over private multimodal corpora - PDFs, audio, and web notes. An async Quart backend ingests source material into vector, graph, and citation stores, then answers questions through a streaming multi-agent loop (Router -> Retriever -> Answerer -> Verifier) in which a Verifier agent checks each claim against the retrieved evidence. Two UIs sit on top: a React 19 single-page app and a Chainlit tutor chat. Infrastructure is Bicep deployed with the Azure Developer CLI.
 
-### System Data Flow
+This README is updated at the end of each working session and verified by the automated Monday documentation workflow.
 
-```mermaid
-flowchart TD
-    subgraph User["Browser"]
-        UP[Upload PDF]
-        UR[Record / Upload Audio]
-        UQ[Ask Question]
-    end
+### When should you use this repo?
 
-    subgraph Ingest["Ingestion (prepdocslib + functions)"]
-        PII[PII Redaction<br/>Azure AI Language]
-        DI[Azure Document Intelligence<br/>prebuilt-layout]
-        SP[Azure Speech-to-Text<br/>diarization]
-        EX[Entity Extractor<br/>graphrag.entity_extractor]
-        FP[Figure Processor<br/>crop + caption + embed]
-        TS[Sentence-aware Splitter<br/>~1000 chars, 10% overlap]
-        EM[Embeddings<br/>text-embedding-3-large]
-    end
+Use it as a reference for building grounded chat over your own documents when you need answers traceable to a source page or timestamp, a per-claim verification gate instead of raw LLM output, or a working example of multi-agent orchestration (flat and hierarchical LangGraph variants) on Azure.
 
-    subgraph Store["Knowledge Stores"]
-        BL[Blob / ADLS Gen2<br/>raw + figures + user paths]
-        AS[Azure AI Search<br/>vector + semantic ranker]
-        GR[Cosmos Gremlin<br/>live knowledge graph]
-        FS[OpenAI Responses<br/>file_search vector store]
-        GC[GraphRAG community summaries]
-    end
+### Key features
 
-    subgraph Agents["Multi-Agent Loop"]
-        CS[Content Safety<br/>prompt screen]
-        RT[Router]
-        RV[Retriever<br/>graph + file_search parallel]
-        AN[Answerer streaming]
-        VF[Verifier]
-        FU[FollowUps]
-        SQ[SchemaFlow SQL<br/>Parse / Impact / Plan / SQL]
-    end
+- **Document ingestion pipeline** - `app/backend/prepdocs.py` (run via `scripts/prepdocs.sh`) drives `prepdocslib/`: parses PDFs with Azure Document Intelligence (PyPDF fallback), plus text and YouTube transcripts; splits sentence-aware; embeds with Azure OpenAI. Output: chunk + embedding records in an Azure AI Search index, or in a Cosmos DB NoSQL vector container when `DOCUMENT_RETRIEVER=cosmos`; source files pushed to an OpenAI `file_search` vector store for citations; raw files uploaded to Blob Storage.
+- **Microsoft Learn ingestion** - `prepdocs.py --source learn` with `prepdocslib/learnstrategy.py` and `scripts/fetch_learn.py` pulls Learn pages listed under `data/learn/` into the same index.
+- **GraphRAG knowledge graph** - `app/backend/graphrag/` extracts entities, writes nodes and edges to Cosmos DB for Apache Gremlin, and maintains community summaries; seeded by `scripts/seed_graph.py`. Output: a queryable knowledge graph used by the Retriever's `graph_search`.
+- **Multi-agent chat** - `POST /chat` streams SSE from `approaches/multiagent_approach.py`: Router classifies the question, Retriever runs vector and graph search in parallel, Answerer streams tokens with citations, Verifier grades each claim, FollowUps suggests next questions. Output: SSE events `token`, `citation`, `claim`, `verdict`, `followups`, `cost`.
+- **Hierarchical agent teams (opt-in)** - `approaches/hierarchical_multiagent_approach.py` + `agents/hierarchical_graph.py` run a LangGraph coordinator over retrieval, answer/verify, and SQL teams behind `USE_HIERARCHICAL_AGENTS=true`, emitting the same SSE schema and falling back to the flat loop if LangGraph is unavailable.
+- **SchemaFlow SQL planner** - `POST /sql/plan` runs Parse -> Impact -> Plan -> SQL agents (`approaches/sql_schemaflow_approach.py`, prompts in `approaches/prompts/sql/`). Output: a typed change-plan JSON.
+- **Voice transcription** - the `/voice/stream` WebSocket (`voice/voice_live.py`) bridges browser PCM16 audio to the Azure AI Speech Voice Live API in transcription-only mode; `/voice/clean` (`voice/transcript_cleaner.py`) does best-effort LLM cleanup. Output: interim and final transcript JSON, plus a cleaned transcript.
+- **Chainlit tutor UI** - `app/backend/chainlit_app.py` is a chat UI over the ingested notes with `search_notes` / `get_document` tools (`agents/tutor_agent.py`, `agents/notes_search_tool.py`) and Redis-backed conversation memory. Output: answers with a per-turn Sources block.
+- **React frontend** - React 19 + Vite + Fluent UI (`app/frontend/`), with pages for chat, papers, voice, SQL, and portfolio, and components for citations, verifier badges, graph view, PDF viewer, and voice recording. Built into the backend container image and served by Quart.
+- **Safety and cost controls** - content-safety screening and PII redaction modules (`safety/`), a Redis semantic cache, per-IP rate limiting, and a per-session token cost meter surfaced in the `cost` SSE event.
+- **Tracing** - OpenTelemetry to Application Insights (`tracing/otel.py`) and LangSmith spans (`tracing/langsmith.py`).
+- **Evals and tests** - `evals/` (answer eval, ground-truth generation, Verifier eval over `verifier_golden.jsonl`, adversarial safety eval) writing to `evals/results/`; agent eval in `app/backend/agents/run_eval.py`; pytest suite in `tests/` plus a Playwright e2e test.
 
-    subgraph Trace["Observability"]
-        LS[LangSmith]
-        AI[Application Insights<br/>OpenTelemetry]
-        CM[Cost Meter]
-    end
+### Roadmap (target)
 
-    UP --> PII --> DI --> EX --> FP --> TS --> EM
-    UR --> SP --> TS
-    DI --> BL
-    SP --> BL
-    EM --> AS
-    EM --> FS
-    EX --> GR --> GC
-    UQ --> CS --> RT
-    RT -->|sql| SQ
-    RT -->|else| RV
-    RV --> AS
-    RV --> FS
-    RV --> GR
-    RV --> AN --> VF
-    VF -- unsupported --> AN
-    VF --> FU --> UQ
-    SQ --> UQ
-    AN -.->|spans| LS
-    AN -.->|spans| AI
-    VF -.->|spans| LS
-    AN -.->|tokens| CM
+Documented in the prep docs but not working today:
+
+- Azure Functions cloud-ingestion service: skill code exists under `app/functions/`, but the service is deferred (see `azure.yaml`) and `prepdocslib/cloudingestionstrategy.py` / `integratedvectorizerstrategy.py` are log-only stubs.
+- PostgreSQL Flexible Server (pgvector) secondary analytics tier: no code yet.
+- The `docs/` guide set referenced by older docs: `docs/` currently holds a notebook and images only.
+- Frontend locales beyond English.
+
+### Target end users
+
+Knowledge workers (clinicians, researchers, analysts) who consume long PDFs and recorded discussions and need answers traceable to a page or utterance; and engineers studying RAG, GraphRAG, and multi-agent patterns on Azure.
+
+### Industry scenario
+
+Portfolio / reference implementation. The demos cover scientific-paper Q&A, voice transcription, a mixed-corpus chatbot, and SQL change planning over a sample clinical-style warehouse.
+
+## Architecture
+
+```
+        React SPA (Vite)              Chainlit tutor UI
+              |  HTTPS / SSE / WebSocket     |
+              v                              v
++---------------------------------------------------------+
+| Quart backend (Gunicorn, Azure Container Apps)           |
+|   /chat, /chat/nonstream   multi-agent SSE loop          |
+|   /sql/plan                SchemaFlow agents             |
+|   /voice/stream (WS)       Voice Live transcription      |
+|   /voice/clean             LLM transcript cleanup        |
+|   /papers/upload  /content  /feedback  /config           |
++---------------------------------------------------------+
+    |             |               |             |
+    v             v               v             v
+ Azure OpenAI  Cosmos DB       Azure AI      Blob
+ / Foundry     (NoSQL vectors  Search        Storage
+ (chat, embed) + chat history  (index)       (raw files)
+               + Gremlin graph)
+    |                                 |
+ Redis (notes index, semantic     OpenAI file_search
+ cache, conversation memory)      vector store (citations)
+
+ Observability: Application Insights (OpenTelemetry) + LangSmith
+
+ Ingestion path:
+ scripts/prepdocs.sh -> prepdocs.py -> prepdocslib
+   parse (Document Intelligence / PyPDF / YouTube / Learn)
+   -> sentence-aware split -> embed
+   -> AI Search index OR Cosmos vector container
+   -> OpenAI file_search vector store
+   -> raw files to Blob Storage
+ graphrag/ -> Cosmos Gremlin nodes/edges + community summaries
 ```
 
-### Extraction Logic Entity Mapping
+A question posted to `/chat` is safety-screened, routed, answered from parallel vector + graph retrieval, and verified claim by claim before follow-ups and cost are emitted on the same SSE stream. Ingestion is a separate offline path run from the CLI (and automatically as the `azd` postprovision hook).
 
-```mermaid
-flowchart LR
-    subgraph Strategy["Strategy modules"]
-        S1[FileStrategy<br/>local ingestion]
-        S2[IntegratedVectorizerStrategy<br/>AI Search vectorizer]
-        S3[CloudIngestionStrategy<br/>Functions + custom skills]
-    end
+### Outputs
 
-    subgraph Parsers["Parsers"]
-        P1[pdfparser<br/>DocIntel + PyPDF fallback]
-        P2[html / csv / json / textparser]
-        P3[voice / diarizer<br/>utterance JSON]
-    end
-
-    subgraph Processors["Processors"]
-        T1[textsplitter<br/>sentence-aware]
-        T2[figureprocessor<br/>+ mediadescriber]
-        T3[embeddings<br/>text + image]
-        T4[entity_extractor]
-    end
-
-    subgraph Writers["Index writers"]
-        W1[searchmanager<br/>-> AI Search]
-        W2[graphrag.indexer<br/>-> Cosmos Gremlin]
-        W3[file_search uploader<br/>-> OpenAI vector store]
-    end
-
-    S1 --> P1 & P2
-    S2 --> P1 & P2
-    S3 --> P1 & P2
-    P3 --> T1
-    P1 --> T2 --> T3
-    P2 --> T1 --> T3
-    T1 --> T4
-    T3 --> W1 & W3
-    T4 --> W2
-```
-
-### Multi-Agent QA Flow
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant F as React SPA
-    participant B as Quart Backend
-    participant CS as Content Safety
-    participant R as Router
-    participant Rt as Retriever
-    participant A as Answerer
-    participant V as Verifier
-    participant LS as LangSmith
-
-    U->>F: question
-    F->>B: POST /chat (SSE)
-    B->>CS: screen prompt
-    CS-->>B: pass / block
-    B->>R: classify
-    R-->>B: {factual|multihop|summarize|sql}
-    B->>Rt: graph_search + file_search (parallel)
-    Rt-->>B: evidence chunks + annotations
-    B-->>F: token (streaming)
-    A->>B: claim emitted
-    B->>V: verify claim vs cited chunk
-    V-->>B: verdict
-    B-->>F: claim+verdict event
-    alt unsupported > 0
-        B->>A: retry with diff
-    end
-    B-->>F: followups + cost + done
-    Note over A,V: every span -> LangSmith + App Insights
-```
-
----
-
-## Repository Structure and Setup
-
-The repo is a monorepo containing the Jekyll portfolio, the Quart + React demo app, the Bicep infrastructure, the eval harness, and a devcontainer. See [CLAUDE.md](CLAUDE.md) section 3 for the full annotated tree.
-
-### Quick start (Azure)
-```bash
-azd auth login
-azd env new robertjames-mmrag
-azd up
-./scripts/prepdocs.sh
-./app/start.sh
-```
-
-### Quick start (local-only, no Azure credentials)
-```bash
-export MODE=local
-./app/start.sh
-```
-See [docs/localdev.md](docs/localdev.md). Uses Ollama, faster-whisper, FAISS, SQLite.
-
-### DevContainer
-Open in VS Code -> "Reopen in Container" -> wait ~5 minutes. Both Azure and local modes work inside.
-
----
-
-## Selected Projects on ML and AI
-
-### LLM Clinical Feature Extraction - Validation, Safety Evaluation, and Optimization
-- [Wiki](https://github.com/Robertjam954/llm-clinical-extraction/wiki)
-- [Visualizations](https://robertjam954.github.io/llm-clinical-extraction/viz)
-
-### The Nonlinear Effects of Mutation on Site-Specific Metastasis and Survival
-- [Wiki](https://github.com/Robertjam954/mutation-metastasis-survival/wiki)
-- [Visualizations](https://robertjam954.github.io/mutation-metastasis-survival/viz)
-
----
-
-## Key Project Links
-
-| Topic | Description |
+| Artifact | Where it lands |
 |---|---|
-| Data Ingestion | DocIntel + Speech-to-Text + sentence-aware chunking + embeddings ([docs/data_ingestion.md](docs/data_ingestion.md)) |
-| GraphRAG | Cosmos Gremlin live graph + community summaries + drift search ([docs/graphrag.md](docs/graphrag.md)) |
-| Multi-Agent Chat | Router / Retriever / Answerer / Verifier loop with streaming ([docs/verifier.md](docs/verifier.md)) |
-| Agentic Retrieval | Optional Azure AI Search Knowledge Agent ([docs/agentic_retrieval.md](docs/agentic_retrieval.md)) |
-| SchemaFlow SQL | Parse / Impact / Plan / SQL multi-agent change planner ([docs/sql_schemaflow.md](docs/sql_schemaflow.md)) |
-| Citations | OpenAI Responses API file_search annotations with PDF + audio deep-linking ([docs/citations.md](docs/citations.md)) |
-| Voice | Real-time STT + diarization + audio timestamp sync ([docs/voice.md](docs/voice.md)) |
-| Safety | Azure AI Content Safety + PII redaction ([docs/productionizing.md](docs/productionizing.md)) |
-| Tracing | LangSmith + Azure Monitor OpenTelemetry ([docs/tracing.md](docs/tracing.md), [docs/monitoring.md](docs/monitoring.md)) |
-| Evaluation | Promptfoo + ai-rag-chat-evaluator + Verifier eval ([docs/evaluation.md](docs/evaluation.md)) |
-| Safety Evaluation | Azure AI Foundry adversarial simulator ([docs/safety_evaluation.md](docs/safety_evaluation.md)) |
+| Chunk + embedding records | Azure AI Search index (`AZURE_SEARCH_INDEX`) or Cosmos NoSQL `documents` container |
+| Citation store files | OpenAI `file_search` vector store |
+| Knowledge graph nodes/edges + community summaries | Cosmos DB for Apache Gremlin |
+| Raw PDFs / audio / uploads | Azure Blob Storage |
+| Chat responses | SSE events (`token`, `citation`, `claim`, `verdict`, `followups`, `cost`) from `/chat` |
+| Transcripts | JSON over the `/voice/stream` WebSocket; cleaned text from `/voice/clean` |
+| SQL change plans | JSON from `/sql/plan` |
+| Eval results | `evals/results/` |
+| Frontend build | `app/frontend/build/`, copied to `/app/static` in the container image |
 
----
+## Deploy
 
-## Blog
+### Pre-requisites
 
-Jekyll posts under `site/_posts/`. RSS at `/feed.xml`, sitemap at `/sitemap.xml`.
+- Azure subscription with access to Azure OpenAI / AI Foundry
+- Azure Developer CLI (`azd`) and Azure CLI (`az`)
+- Python 3.11+, Node.js, and (for image builds) Docker
 
----
+### Products used
 
-## License
+Azure OpenAI / AI Foundry, Azure AI Search, Azure Document Intelligence, Azure AI Speech (Voice Live API), Azure Cosmos DB (NoSQL + Gremlin), Azure Blob Storage, Azure Container Apps, Azure Container Registry, Application Insights / Log Analytics, Azure Key Vault. External: OpenAI Responses `file_search`, LangSmith, Redis.
+
+### Required licenses
+
+None beyond an Azure subscription. Optional external services (OpenAI API for `file_search`, LangSmith) need their own API keys.
+
+### Pricing considerations
+
+Deployed resources bill immediately: Azure OpenAI tokens, AI Search, Cosmos DB RU/s (Gremlin throughput especially during bulk graph indexing), Container Apps, storage, and Application Insights ingestion. Tear down with `azd down` when finished.
+
+### Deploy instructions
+
+Note: `infra/main.bicep` is a Stage 1 deployment that provisions compute and observability (Log Analytics, Application Insights, ACR, Container Apps environment, backend app, RBAC) and references pre-existing Foundry, Cosmos DB, Storage, and Key Vault resources by name via parameters. Adjust those parameters to point at your own resources before deploying.
+
+```bash
+# Azure
+azd auth login
+azd env new <env-name>
+azd up            # preprovision: scripts/auth_init.sh; postprovision: scripts/prepdocs.sh
+
+# Ingestion (also runs as the postprovision hook)
+./scripts/prepdocs.sh                     # data/papers/ into the vector store
+./scripts/prepdocs.sh --removeall
+./scripts/prepdocs.sh --source learn      # Microsoft Learn pages
+python scripts/seed_graph.py              # seed the Gremlin graph
+
+# Local dev (backend :50505 + frontend :5173)
+./app/start.sh
+
+# Chainlit tutor UI
+cd app/backend && chainlit run chainlit_app.py --host 0.0.0.0 --port 8000
+```
+
+### Testing the deployment
+
+```bash
+pytest                                    # unit + integration (mocked Azure clients)
+npm run test:e2e                          # frontend build + Playwright e2e
+ruff check . && ruff format .             # lint
+cd app/frontend && npm run lint
+locust -f locustfile.py --host http://localhost:50505   # load test
+
+# Evals (separate venv; deps conflict with the backend)
+python -m venv .evalenv && source .evalenv/bin/activate
+pip install -r evals/requirements.txt
+python evals/evaluate.py
+python evals/verifier_eval.py
+python evals/safety_evaluation.py --target_url http://localhost:50505/chat
+```
+
+For a deployed app, open the Container App URL and ask a question on the chat page; verify SSE events arrive and citations resolve.
+
+## Supporting documentation
+
+### Resource links
+
+- [PRODUCT.md](PRODUCT.md) - what the product does and why
+- [ARCHITECTURE.md](ARCHITECTURE.md) - components and data flow in detail
+- [CONTRIBUTING.md](CONTRIBUTING.md) - dev setup and conventions
+- [CLAUDE.md](CLAUDE.md) - operating manual for coding agents
+- [AGENTS.md](AGENTS.md) - agent roster and specs
+- [TODO.md](TODO.md) - machine-refreshed weekly backlog
+- [Azure-Samples/azure-search-openai-demo](https://github.com/Azure-Samples/azure-search-openai-demo) - the upstream pattern this app extends
+
+### Licensing
 
 MIT. See [LICENSE](LICENSE).
+
+## Disclaimers
+
+This is sample / portfolio code provided as-is, without warranty of any kind. You are responsible for the cost of any Azure or third-party resources you deploy. The repository contains no PHI or sensitive data; sample corpora under `data/` are public material. Do not commit secrets or `.env` files.

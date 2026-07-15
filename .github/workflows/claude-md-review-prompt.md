@@ -3,11 +3,12 @@
 You are running the Monday documentation pass for this repository. It has two
 deliverables:
 
-1. **Verify CLAUDE.md.** CLAUDE.md is the operating manual that future Claude Code
-   sessions read before working in this codebase. The developer updates it at the
-   end of each working session; your job is to keep it honest. Compare every claim
-   in the file against the actual code and fix only what has drifted. Where the
-   existing CLAUDE.md and the code disagree, **always favor the code.**
+1. **Verify CLAUDE.md and README.md.** CLAUDE.md is the operating manual that future
+   Claude Code sessions read before working in this codebase; README.md is the
+   public-facing overview. The developer updates both at the end of each working
+   session; your job is to keep them honest. Compare every claim in each file
+   against the actual code and fix only what has drifted. Where the existing docs
+   and the code disagree, **always favor the code.**
 2. **Regenerate TODO.md.** A prioritized, dated task list at the repository root
    that captures what needs doing next, derived from your analysis.
 
@@ -33,7 +34,7 @@ Treat the list above as a starting map, not ground truth - verify every path exi
 and document anything significant that is missing from it.
 <!-- REPO_SPECIFIC_END -->
 
-## Part 1: CLAUDE.md verification
+## Part 1: CLAUDE.md and README.md verification
 
 ### Analysis requirements
 
@@ -54,14 +55,19 @@ and document anything significant that is missing from it.
    workflows; document what each does.
 7. **Conventions and gotchas** - extract coding conventions from the code; keep any
    documented gotchas that still apply and remove ones that no longer do.
+8. **README.md** - verify it the same way as CLAUDE.md: the YAML front-matter
+   (languages and products actually used), the Key features list (each feature's
+   module and output must exist), the ASCII architecture diagram, every command in
+   the Deploy section, the Outputs table, and the Roadmap (target) list (promote
+   items that now work; demote claims that no longer do). Fix any drift.
 
-### Output requirements for CLAUDE.md
+### Output requirements for CLAUDE.md and README.md
 
 - Maintain the current structure; update content in place for accuracy.
 - Add new sections only for significant undocumented findings.
 - Remove outdated information.
 - Be thorough but concise - every line should provide value.
-- If the file is already accurate, make NO edits to it.
+- If a file is already accurate, make NO edits to it.
 
 ## Part 2: TODO.md generation
 
