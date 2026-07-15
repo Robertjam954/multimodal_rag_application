@@ -60,6 +60,15 @@ and document anything significant that is missing from it.
    module and output must exist), the ASCII architecture diagram, every command in
    the Deploy section, the Outputs table, and the Roadmap (target) list (promote
    items that now work; demote claims that no longer do). Fix any drift.
+9. **Dependency manifests vs imports** - verify the requirements files against the
+   actual third-party imports in the code, textually only (never run installs,
+   pip, or uv): `app/backend/requirements.in` + `app/backend/requirements.txt`
+   against imports across `app/backend/**/*.py`, `evals/requirements.txt` against
+   `evals/*.py`, and `app/functions/requirements.txt` against
+   `app/functions/**/*.py` (it includes `-r ../backend/requirements.in`). Add
+   imported-but-undeclared packages to the manifest with a comment that they need
+   re-pinning via `uv pip compile`; flag declared-but-unused packages in TODO.md
+   rather than deleting them.
 
 ### Output requirements for CLAUDE.md and README.md
 

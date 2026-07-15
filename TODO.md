@@ -27,6 +27,10 @@ the codebase. No "Done since last week" section yet - this is the first run.
 
 ## P3 - Hygiene and hardening
 
+- [x] Import audit of the requirements manifests (2026-07-15): added previously undeclared `chainlit`, `azure-ai-projects`, and `typing-extensions` to `app/backend/requirements.in`, and `httpx` to `evals/requirements.txt`; confirmed `app/functions/requirements.txt` is covered via `azure-functions` + `-r ../backend/requirements.in`.
+- [ ] Run `uv pip compile requirements.in -o requirements.txt` in `app/backend/` to produce real pins - requirements.txt is still a pass-through of requirements.in, including the packages added by the 2026-07-15 import audit.
+- [ ] Review declared-but-unimported backend packages (`pillow`, `python-magic`, `tiktoken`, `pydantic`, `msgspec`, `aiosqlite`, `fastmcp`, `redisvl`, `faiss-cpu`) - no direct import found in `app/backend/**/*.py`; keep any that are transitive or planned, drop the rest.
+- [ ] `app/functions/*/__init__.py` imports `prepdocslib` but no bundled copy exists under `app/functions/` - run `python scripts/copy_prepdocslib.py` or fix the bundling so function deploys work.
 - [ ] Add dedicated tests for `approaches/hierarchical_multiagent_approach.py` and `agents/tutor_agent.py` - no `tests/test_hierarchical*.py` or `tests/test_tutor*.py` exists.
 - [ ] Add tests for the stub ingestion strategies once implemented (`cloudingestionstrategy.py`, `integratedvectorizerstrategy.py`) - currently untested log-only code.
 - [ ] i18n: CLAUDE.md claims a "folder skeleton for other locales"; only `app/frontend/src/locales/en/` exists. Add the skeleton or drop the claim.
