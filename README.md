@@ -1,6 +1,6 @@
 # multimodal_rag_application
 
-Multimodal Retrieval-Augmented Generation system with PDF + voice ingestion, GraphRAG, a multi-agent QA loop gated by a Verifier, citation-grade evidence, SchemaFlow-style SQL agent, and full LangSmith + Azure Monitor tracing. Paired with a Jekyll portfolio site under `site/`.
+Multimodal Retrieval-Augmented Generation system with PDF + voice ingestion, an optional GraphRAG layer, a multi-agent QA loop gated by a Verifier, citation-grade evidence, a SchemaFlow-style SQL agent, and LangSmith + Azure Monitor tracing. Paired with a static portfolio site under `site/`.
 
 For Claude Code operating instructions, see [CLAUDE.md](CLAUDE.md).
 
@@ -8,7 +8,9 @@ For Claude Code operating instructions, see [CLAUDE.md](CLAUDE.md).
 
 ## Project Overview
 
-This project demonstrates an end-to-end production pattern for grounded conversational AI over private multimodal corpora. It combines Azure Document Intelligence and Azure Speech-to-Text for ingestion, GraphRAG and Azure AI Search for retrieval, the OpenAI Responses API `file_search` tool for citation-grade evidence, and a four-agent loop (Router -> Retriever -> Answerer -> Verifier) for answer generation. A separate SchemaFlow multi-agent planner demonstrates SQL literacy over a sample TCGA-like clinical warehouse. LangSmith and Azure Monitor instrument every span.
+This project demonstrates an end-to-end pattern for grounded conversational AI over private multimodal corpora. The chat path is a LangGraph multi-agent loop (Router -> Retriever -> Answerer -> Verifier -> FollowUps) that streams tokens over Server-Sent Events while the Verifier grounds each claim against retrieved evidence. Retrieval is served by a pluggable document retriever; the deployed configuration uses an **Azure Cosmos DB (NoSQL) vector store**, and the default local configuration uses a Redis-backed notes store. Optional layers - GraphRAG (Cosmos Gremlin), OpenAI Responses `file_search` citations, Azure Document Intelligence ingestion, Azure Speech voice, content safety, and PII redaction - exist in the code and are toggled by feature flags. A separate SchemaFlow multi-agent planner demonstrates SQL change planning. LangSmith and Azure Monitor (OpenTelemetry) instrument the spans.
+
+> **Code vs. deployment.** The backend implements a broad feature set behind `USE_*` flags. The current Azure deployment enables a focused subset (Cosmos vector retrieval + Verifier + chat history). Optional integrations that are not wired into the deployed infra (Azure AI Search, GraphRAG, voice, content safety, PII, Redis, PostgreSQL) fall back to stubs or are turned off. See [Deployed configuration](#deployed-configuration) below.
 
 The pipeline transitions from **Natural Language Space** (PDFs and recordings) to **Code Entity Space** (graph nodes, vector chunks, citation annotations, verifier verdicts, cost meters).
 
@@ -51,10 +53,10 @@ flowchart TD
 
     subgraph Store["Knowledge Stores"]
         BL[Blob / ADLS Gen2<br/>raw + figures + user paths]
-        AS[Azure AI Search<br/>vector + semantic ranker]
-        GR[Cosmos Gremlin<br/>live knowledge graph]
-        FS[OpenAI Responses<br/>file_search vector store]
-        GC[GraphRAG community summaries]
+        AS[Cosmos DB NoSQL<br/>vector store - primary retrieval]
+        GR[Cosmos Gremlin<br/>knowledge graph - optional]
+        FS[OpenAI Responses<br/>file_search - optional citations]
+        GC[GraphRAG community summaries - optional]
     end
 
     subgraph Agents["Multi-Agent Loop"]
@@ -174,26 +176,24 @@ sequenceDiagram
 
 ## Repository Structure and Setup
 
-The repo is a monorepo containing the Jekyll portfolio, the Quart + React demo app, the Bicep infrastructure, the eval harness, and a devcontainer. See [CLAUDE.md](CLAUDE.md) section 3 for the full annotated tree.
+The repo is a monorepo containing the static portfolio site (`site/`), the Quart + React demo app (`app/`), the Bicep infrastructure (`infra/`), scripts (`scripts/`), and the eval harness (`evals/`). See [CLAUDE.md](CLAUDE.md) for the full annotated tree.
 
 ### Quick start (Azure)
+
+The deployment targets a pre-existing `ai-tutor` resource group (Foundry, Cosmos, Blob, Key Vault). `azd up` provisions only the missing compute/observability (Container Apps, ACR, Log Analytics, Application Insights) and wires the backend to those resources with keyless Entra ID auth.
+
 ```bash
 azd auth login
 azd env new robertjames-mmrag
-azd up
-./scripts/prepdocs.sh
-./app/start.sh
+azd up            # provisions compute + deploys the backend container
 ```
 
-### Quick start (local-only, no Azure credentials)
+### Quick start (local dev)
 ```bash
-export MODE=local
-./app/start.sh
+./app/start.sh    # boots the Quart backend on :50505 and the Vite frontend on :5173
 ```
-See [docs/localdev.md](docs/localdev.md). Uses Ollama, faster-whisper, FAISS, SQLite.
 
-### DevContainer
-Open in VS Code -> "Reopen in Container" -> wait ~5 minutes. Both Azure and local modes work inside.
+Local config is driven by `app/backend/.env` (git-ignored). By default the backend uses the Redis-backed notes retriever (`DOCUMENT_RETRIEVER=redis_notes`); the deployed container sets `DOCUMENT_RETRIEVER=cosmos`.
 
 ---
 
@@ -209,27 +209,43 @@ Open in VS Code -> "Reopen in Container" -> wait ~5 minutes. Both Azure and loca
 
 ---
 
-## Key Project Links
+## Components
 
-| Topic | Description |
+Where each capability lives in the code (subdirectories of `app/backend/`):
+
+| Topic | Where |
 |---|---|
-| Data Ingestion | DocIntel + Speech-to-Text + sentence-aware chunking + embeddings ([docs/data_ingestion.md](docs/data_ingestion.md)) |
-| GraphRAG | Cosmos Gremlin live graph + community summaries + drift search ([docs/graphrag.md](docs/graphrag.md)) |
-| Multi-Agent Chat | Router / Retriever / Answerer / Verifier loop with streaming ([docs/verifier.md](docs/verifier.md)) |
-| Agentic Retrieval | Optional Azure AI Search Knowledge Agent ([docs/agentic_retrieval.md](docs/agentic_retrieval.md)) |
-| SchemaFlow SQL | Parse / Impact / Plan / SQL multi-agent change planner ([docs/sql_schemaflow.md](docs/sql_schemaflow.md)) |
-| Citations | OpenAI Responses API file_search annotations with PDF + audio deep-linking ([docs/citations.md](docs/citations.md)) |
-| Voice | Real-time STT + diarization + audio timestamp sync ([docs/voice.md](docs/voice.md)) |
-| Safety | Azure AI Content Safety + PII redaction ([docs/productionizing.md](docs/productionizing.md)) |
-| Tracing | LangSmith + Azure Monitor OpenTelemetry ([docs/tracing.md](docs/tracing.md), [docs/monitoring.md](docs/monitoring.md)) |
-| Evaluation | Promptfoo + ai-rag-chat-evaluator + Verifier eval ([docs/evaluation.md](docs/evaluation.md)) |
-| Safety Evaluation | Azure AI Foundry adversarial simulator ([docs/safety_evaluation.md](docs/safety_evaluation.md)) |
+| Multi-agent chat | `approaches/multiagent_approach.py`, `agents/{router,retriever,answerer,verifier,followups}.py` |
+| Hierarchical agent teams (opt-in via `USE_HIERARCHICAL_AGENTS`) | `approaches/hierarchical_multiagent_approach.py`, `agents/hierarchical_graph.py` |
+| Document retrieval (pluggable) | `core/document_retriever.py`, `core/cosmos_vector_retriever.py` (deployed), Redis notes retriever (local default) |
+| GraphRAG (optional) | `graphrag/`, `agents/tools.py:graph_search` (stubs when no Cosmos Gremlin account) |
+| Citations (optional) | `agents/tools.py:file_search` - OpenAI Responses `file_search` (stubs when no vector store id) |
+| SchemaFlow SQL | `approaches/sql_schemaflow_approach.py`, `agents/sql_schemaflow.py` |
+| Voice (optional) | `voice/` (Azure Speech / Voice Live bridge), routes `/voice/stream`, `/voice/clean` |
+| Data ingestion | `prepdocs.py`, `prepdocslib/` |
+| Safety (optional) | `safety/content_safety.py`, `safety/pii.py` |
+| Tracing | `tracing/otel.py` (Azure Monitor), `tracing/langsmith.py` |
+| Evaluation | `evals/` (see files under `evals/`) |
 
 ---
 
-## Blog
+## Deployed configuration
 
-Jekyll posts under `site/_posts/`. RSS at `/feed.xml`, sitemap at `/sitemap.xml`.
+`infra/main.bicep` is a Stage-1 deploy against the existing `ai-tutor` resource group. It creates Log Analytics, Application Insights, Azure Container Registry, a Container Apps environment, the backend Container App, and Entra ID role assignments. It references (does not recreate) the pre-existing Foundry account/project, Cosmos DB account, Blob storage, and Key Vault.
+
+- **Chat + embeddings:** Azure AI Foundry project endpoint (`AZURE_AI_PROJECT_ENDPOINT`) for chat/Responses; the Foundry account endpoint for embeddings.
+- **Retrieval:** Cosmos DB NoSQL vector store (`DOCUMENT_RETRIEVER=cosmos`, database `rag`, container `documents`).
+- **Chat history:** Cosmos DB NoSQL (database `chat`, container `history`).
+- **Auth:** keyless / Entra ID only. The Container App uses a system-assigned managed identity; `infra/app/rbac.bicep` grants Cognitive Services OpenAI User, Azure AI User, Cosmos DB Built-in Data Contributor, Storage Blob Data Contributor, Key Vault Secrets User, and AcrPull. No API keys.
+- **Feature flags set by the deploy:** `USE_VERIFIER=true`, `USE_VECTOR_SEARCH=true`, `USE_FEEDBACK` from param, `USE_CHAT_HISTORY_COSMOS=true`. Turned off: `USE_GRAPHRAG`, `USE_MULTIMODAL`, `USE_VOICE_DEMO`, `USE_SQL_DEMO`, `USE_CONTENT_SAFETY`, `USE_PII_REDACTION`.
+
+Note: several Bicep modules for optional services (Azure AI Search, Speech, Vision, Content Safety, Document Intelligence, Cosmos Gremlin) exist under `infra/core/` but are not currently composed into `main.bicep`.
+
+---
+
+## Portfolio site
+
+`site/` is a self-contained static HTML page (`site/index.html`), deployed to GitHub Pages as-is (no Jekyll build) by `.github/workflows/pages.yml`.
 
 ---
 

@@ -11,6 +11,12 @@
         "storageAccountName": { "value": "${AZURE_STORAGE_ACCOUNT=azureblobstorageai}" },
         "keyVaultName": { "value": "${AZURE_KEY_VAULT_NAME=ai-tutor}" },
         "chatGptDeploymentName": { "value": "${AZURE_OPENAI_CHATGPT_DEPLOYMENT=gpt-4o-mini}" },
-        "embeddingDeploymentName": { "value": "${AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-large}" }
+        "embeddingDeploymentName": { "value": "${AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-large}" },
+        "useAzureSearch": { "value": "${USE_AZURE_SEARCH=false}" },
+        "searchServiceName": { "value": "${AZURE_SEARCH_SERVICE=}" },
+        "searchIndexName": { "value": "${AZURE_SEARCH_INDEX=rag-index}" },
+        "searchSkuName": { "value": "${AZURE_SEARCH_SKU=basic}" },
+        "searchSemanticSearch": { "value": "${AZURE_SEARCH_SEMANTIC_RANKER_TIER=free}" },
+        "documentRetriever": { "value": "${CLOUD_DOCUMENT_RETRIEVER=cosmos}" }
     }
 }

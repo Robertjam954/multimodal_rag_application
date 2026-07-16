@@ -6,6 +6,9 @@
   - Storage Blob Data Contributor   -> Blob storage (files)
   - Key Vault Secrets User          -> Key Vault (secrets)
   - AcrPull                         -> ACR (pull backend image)
+  - Search Service Contributor + Search Index Data Contributor -> AI Search
+    (backend: runtime hybrid queries + in-process ingestion incl. index create;
+     deploying user: local prepdocs.sh runs)
 */
 
 param principalId string
@@ -14,6 +17,9 @@ param cosmosName string
 param storageName string
 param keyVaultName string
 param acrName string
+param searchName string = ''
+@description('Deploying user objectId; granted search data-plane roles for local prepdocs. Empty skips.')
+param userPrincipalId string = ''
 
 // Built-in role definition GUIDs
 var roles = {
@@ -22,6 +28,8 @@ var roles = {
   blobDataContributor: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
   keyVaultSecretsUser: '4633458b-17de-408a-b874-0445c86b69e6'
   acrPull: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+  searchServiceContributor: '7ca78c08-252a-4471-8644-bb5ff32d4ba0' // index create/update (control plane of indexes)
+  searchIndexDataContributor: '8ebe5a00-799e-43f5-93ac-243d3dce84a7' // document read/write (data plane)
 }
 var cosmosDataContributorId = '00000000-0000-0000-0000-000000000002'
 
@@ -78,6 +86,50 @@ resource acrRA 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
     principalId: principalId
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.acrPull)
     principalType: 'ServicePrincipal'
+  }
+}
+
+resource search 'Microsoft.Search/searchServices@2024-06-01-preview' existing = if (!empty(searchName)) {
+  name: searchName
+}
+
+resource searchSvcContribRA 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(searchName)) {
+  name: guid(searchName, principalId, roles.searchServiceContributor)
+  scope: search
+  properties: {
+    principalId: principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.searchServiceContributor)
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource searchDataContribRA 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(searchName)) {
+  name: guid(searchName, principalId, roles.searchIndexDataContributor)
+  scope: search
+  properties: {
+    principalId: principalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.searchIndexDataContributor)
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource userSearchSvcContribRA 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(searchName) && !empty(userPrincipalId)) {
+  name: guid(searchName, userPrincipalId, roles.searchServiceContributor)
+  scope: search
+  properties: {
+    principalId: userPrincipalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.searchServiceContributor)
+    principalType: 'User'
+  }
+}
+
+resource userSearchDataContribRA 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(searchName) && !empty(userPrincipalId)) {
+  name: guid(searchName, userPrincipalId, roles.searchIndexDataContributor)
+  scope: search
+  properties: {
+    principalId: userPrincipalId
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.searchIndexDataContributor)
+    principalType: 'User'
   }
 }
 

@@ -28,6 +28,18 @@ param keyVaultName string = 'ai-tutor'
 param chatGptDeploymentName string = 'gpt-4o-mini'
 param embeddingDeploymentName string = 'text-embedding-3-large'
 
+@description('Azure AI Search: optional runtime retrieval backend. Off by default (local Obsidian RAG is the active direction); flip on to provision the service.')
+param useAzureSearch bool = false
+param searchServiceName string = ''
+param searchIndexName string = 'rag-index'
+@allowed(['free', 'basic', 'standard'])
+param searchSkuName string = 'basic'
+@allowed(['disabled', 'free', 'standard'])
+param searchSemanticSearch string = 'free'
+@description('Primary retrieval backend for the container: azure_search or cosmos.')
+@allowed(['azure_search', 'cosmos'])
+param documentRetriever string = 'cosmos'
+
 param useVerifier bool = true
 param useFeedback bool = true
 param rateLimitPerMin int = 30
@@ -84,6 +96,17 @@ module containerEnv 'core/host/container-apps-environment.bicep' = {
   }
 }
 
+module search 'core/search/search-services.bicep' = if (useAzureSearch) {
+  name: 'search'
+  params: {
+    name: !empty(searchServiceName) ? searchServiceName : '${abbrs.searchSearchServices}${resourceToken}'
+    location: location
+    tags: tags
+    skuName: searchSkuName
+    semanticSearch: searchSemanticSearch
+  }
+}
+
 module backend 'app/backend.bicep' = {
   name: 'backend'
   params: {
@@ -107,7 +130,10 @@ module backend 'app/backend.bicep' = {
       { name: 'AZURE_AI_MODEL_DEPLOYMENT_NAME', value: chatGptDeploymentName }
       { name: 'AZURE_OPENAI_EMBEDDING_DEPLOYMENT', value: embeddingDeploymentName }
       { name: 'AZURE_OPENAI_EMB_DEPLOYMENT', value: embeddingDeploymentName }
-      { name: 'DOCUMENT_RETRIEVER', value: 'cosmos' }
+      { name: 'DOCUMENT_RETRIEVER', value: documentRetriever }
+      { name: 'AZURE_SEARCH_SERVICE', value: useAzureSearch ? search!.outputs.name : '' }
+      { name: 'AZURE_SEARCH_INDEX', value: searchIndexName }
+      { name: 'AZURE_SEARCH_SEMANTIC_RANKER', value: (useAzureSearch && searchSemanticSearch != 'disabled') ? 'true' : 'false' }
       { name: 'AZURE_COSMOSDB_ENDPOINT', value: cosmos.properties.documentEndpoint }
       { name: 'AZURE_COSMOSDB_VECTOR_DATABASE', value: 'rag' }
       { name: 'AZURE_COSMOSDB_VECTOR_CONTAINER', value: 'documents' }
@@ -145,6 +171,8 @@ module rbac 'app/rbac.bicep' = {
     storageName: storageAccountName
     keyVaultName: keyVaultName
     acrName: acr.outputs.name
+    searchName: useAzureSearch ? search!.outputs.name : ''
+    userPrincipalId: principalId
   }
 }
 
@@ -157,4 +185,8 @@ output APPLICATIONINSIGHTS_CONNECTION_STRING string = appInsights.outputs.connec
 output AZURE_OPENAI_ENDPOINT string = foundryServicesEndpoint
 output AZURE_AI_PROJECT_ENDPOINT string = foundryProjectEndpoint
 output AZURE_COSMOSDB_ENDPOINT string = cosmos.properties.documentEndpoint
+output AZURE_SEARCH_SERVICE string = useAzureSearch ? search!.outputs.name : ''
+output AZURE_SEARCH_ENDPOINT string = useAzureSearch ? search!.outputs.endpoint : ''
+output AZURE_SEARCH_INDEX string = searchIndexName
+output CLOUD_DOCUMENT_RETRIEVER string = documentRetriever
 output BACKEND_URI string = backend.outputs.uri
