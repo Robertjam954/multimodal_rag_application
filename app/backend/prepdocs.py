@@ -22,8 +22,10 @@ logger = logging.getLogger(__name__)
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
-    p.add_argument("--source", choices=["files", "learn"], default="files")
+    p.add_argument("--source", choices=["files", "learn", "obsidian"], default="files")
     p.add_argument("--datadir", default=os.getenv("DATA_DIR", "data/papers"))
+    p.add_argument("--vault", default=os.getenv("OBSIDIAN_VAULT_PATH", ""))
+    p.add_argument("--vault-category", default=os.getenv("OBSIDIAN_CATEGORY", "obsidian"))
     p.add_argument("--learn-urls", default=os.getenv("LEARN_URLS", "data/learn/azure_ai_seed.txt"))
     p.add_argument("--learn-category", default=os.getenv("LEARN_CATEGORY", "learn-azure-ai"))
     p.add_argument("--learn-concurrency", type=int, default=int(os.getenv("LEARN_CONCURRENCY", "4")))
@@ -52,6 +54,27 @@ async def main() -> int:
     if args.removeall:
         await search.remove_all()
         logger.info("Removed search index")
+        return 0
+
+    if args.source == "obsidian":
+        if not args.vault:
+            logger.error("no vault path: pass --vault or set OBSIDIAN_VAULT_PATH")
+            return 2
+        vault = Path(args.vault).expanduser()
+        if not vault.is_dir():
+            logger.error("vault not found: %s", vault)
+            return 2
+        from prepdocslib.obsidianstrategy import ObsidianStrategy
+
+        strat: Any = ObsidianStrategy(
+            vault=vault,
+            search=search,
+            embeddings=embeddings,
+            category=args.vault_category,
+        )
+        await strat.setup()
+        result = await strat.run()
+        logger.info("prepdocs done (obsidian): %s", result)
         return 0
 
     if args.source == "learn":
