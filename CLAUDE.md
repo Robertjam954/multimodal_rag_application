@@ -212,7 +212,7 @@ multimodal_rag_application/
 │
 ├── data/{papers,audio,graphs}/
 ├── .devcontainer/{devcontainer.json,Dockerfile,docker-compose.yml,post-create.sh}
-└── .github/workflows/{pages,update-claude-md}.yml   # (only these exist; no azure-dev/tests/eval workflows yet)
+└── .github/workflows/{pages,update-claude-md,self-document}.yml   # (no azure-dev/tests/eval workflows yet)
 ```
 
 ---
@@ -461,7 +461,7 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 - **Redact bodies:** `TRACELOOP_TRACE_CONTENT=false`.
 - **Cost meter:** `core/costmeter.py` tracks per-session input/output tokens; surfaced in `/chat` `cost` SSE event.
 - **Dashboard:** `azd monitor`.
-- **CI:** the only GitHub Actions workflows present are `pages.yml` (portfolio deploy) and `update-claude-md.yml`. There is no test/eval CI workflow yet; run `pytest` and the eval scripts locally.
+- **CI:** GitHub Actions workflows present are `pages.yml` (portfolio deploy), `update-claude-md.yml` (weekly CLAUDE.md sync), and `self-document.yml` (runs the `.claude/agents/self-documenter.md` agent on push/schedule to sync STATUS.md + project markdown + ADRs, opening a PR). There is no test/eval CI workflow yet; run `pytest` and the eval scripts locally.
 
 ---
 

@@ -304,12 +304,14 @@ async def _setup_clients(app: Quart) -> None:
     from approaches.chatreadretrieveread import ChatReadRetrieveReadApproach
     from approaches.sql_schemaflow_approach import SchemaFlowSQLApproach
     from approaches.promptmanager import PromptManager
+    from core.warehouse import get_warehouse
 
     pm = PromptManager()
     app.config[CONFIG_CHAT_APPROACH] = ChatReadRetrieveReadApproach(prompt_manager=pm)
     app.config[CONFIG_MULTIAGENT_APPROACH] = MultiAgentApproach(prompt_manager=pm)
     app.config[CONFIG_HIERARCHICAL_APPROACH] = HierarchicalMultiAgentApproach(prompt_manager=pm)
-    app.config[CONFIG_SQL_APPROACH] = SchemaFlowSQLApproach(prompt_manager=pm)
+    # Warehouse grounds the SchemaFlow SQL agent (catalog + dry-run). Absent seed -> pure-LLM fallback.
+    app.config[CONFIG_SQL_APPROACH] = SchemaFlowSQLApproach(prompt_manager=pm, warehouse=get_warehouse())
 
     # Flags from env
     def b(name: str, default: str = "false") -> bool:
