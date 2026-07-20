@@ -78,6 +78,15 @@ async def index():
     return await bp.send_static_file("index.html")
 
 
+# SPA client-side routes (BrowserRouter): deep links and refreshes must serve the app shell.
+@bp.route("/papers")
+@bp.route("/voice")
+@bp.route("/sql")
+@bp.route("/embed")
+async def spa_routes():
+    return await bp.send_static_file("index.html")
+
+
 @bp.route("/redirect")
 async def redirect_target():
     return ""

@@ -5,8 +5,9 @@ import asyncio
 import logging
 from typing import Any
 
-from agents.tools import file_search, graph_search
+from agents.tools import graph_search
 from approaches.approach import Citation, DataPoints
+from core.document_retriever import get_retriever
 
 logger = logging.getLogger(__name__)
 
@@ -20,29 +21,30 @@ async def retrieve(
     overrides = overrides or {}
     k = overrides.get("top", top)
 
-    fs_task = asyncio.create_task(file_search(query=question, k=k))
+    # Primary retrieval: Cosmos NoSQL vector store (DOCUMENT_RETRIEVER=cosmos).
+    retriever = get_retriever()
+    docs_task = asyncio.create_task(retriever.retrieve(question, k=k))
     gr_task = (
         asyncio.create_task(graph_search(query=question, hops=overrides.get("graph_hops", 2), k=k))
         if use_graphrag
         else asyncio.create_task(_empty())
     )
-    fs, gr = await asyncio.gather(fs_task, gr_task, return_exceptions=False)
+    docs, gr = await asyncio.gather(docs_task, gr_task, return_exceptions=False)
 
     citations: list[Citation] = []
     text_snippets: list[str] = []
 
-    for r in fs:
-        cid = r.get("id") or r.get("annotation_id") or r.get("filename", "?")
+    for d in docs:
         citations.append(
             Citation(
-                id=cid,
-                source_file=r.get("filename", "unknown"),
-                source_page=str(r.get("page")) if r.get("page") else None,
-                score=r.get("score"),
-                content_snippet=r.get("content", "")[:1500],
+                id=d.id,
+                source_file=d.source_url or d.content_topic or "cosmos",
+                source_page=None,
+                score=d.score,
+                content_snippet=(d.content or "")[:1500],
             )
         )
-        text_snippets.append(r.get("content", ""))
+        text_snippets.append(d.content or "")
 
     subgraph = None
     if gr:

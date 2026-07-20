@@ -1,0 +1,32 @@
+# Keep the ACR build context small — the image only needs app/backend + app/frontend source.
+.git
+.github
+.azure
+.venv
+**/.venv
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+*.log
+**/.DS_Store
+.vscode
+.idea
+
+# Frontend build is produced inside the Docker node stage
+app/frontend/build
+app/frontend/dist
+
+# Sibling sample/portfolio dirs that live in this repo but aren't part of the backend image
+agent-framework-agent-with-local-tools-responses
+todo-nodejs-mongo
+self-documenting-ai-agent
+claude-md-memory-workflow
+site
+
+# Large local data / caches not needed at build time
+data
+**/*.ipynb_checkpoints
