@@ -7,14 +7,14 @@ interface Step {
 export default function ThoughtProcess({ steps }: { steps: Step[] }) {
     if (!steps.length) return <em>No thought-process steps recorded.</em>;
     return (
-        <ol>
+        <ul className="timeline">
             {steps.map((s, i) => (
                 <li key={i}>
-                    <strong>{s.title}</strong>
-                    {s.description ? `: ${s.description}` : ""}
-                    {s.props ? <pre style={{ fontSize: 12 }}>{JSON.stringify(s.props, null, 2)}</pre> : null}
+                    <strong style={{ textTransform: "capitalize" }}>{s.title}</strong>
+                    {s.description ? <div style={{ color: "var(--muted)", fontSize: 13.5 }}>{s.description}</div> : null}
+                    {s.props ? <pre style={{ fontSize: 12, overflow: "auto" }}>{JSON.stringify(s.props, null, 2)}</pre> : null}
                 </li>
             ))}
-        </ol>
+        </ul>
     );
 }

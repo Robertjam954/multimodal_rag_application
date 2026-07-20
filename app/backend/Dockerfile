@@ -1,3 +1,12 @@
+# --- frontend build stage (React 19 + Vite -> /frontend/build) ---
+FROM node:20-slim AS frontend
+WORKDIR /frontend
+COPY app/frontend/package.json app/frontend/package-lock.json ./
+RUN npm ci --legacy-peer-deps
+COPY app/frontend/ ./
+RUN npm run build
+
+# --- backend ---
 FROM python:3.11-slim AS base
 
 ENV PYTHONUNBUFFERED=1 \
@@ -16,8 +25,10 @@ COPY app/backend/requirements.txt /tmp/requirements.txt
 COPY app/backend/requirements.in /tmp/requirements.in
 RUN pip install --no-cache-dir -r /tmp/requirements.in
 
+# CACHEBUST forces the source COPY layer to rebuild when its value changes.
+ARG CACHEBUST=0
 COPY app/backend /app
-COPY app/frontend/build /app/static
+COPY --from=frontend /frontend/build /app/static
 
 ENV PORT=50505
 EXPOSE 50505

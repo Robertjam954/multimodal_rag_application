@@ -1,13 +1,11 @@
-import { Button } from "@fluentui/react-components";
-
 export default function FollowUps({ items, onPick }: { items: string[]; onPick: (q: string) => void }) {
     if (!items.length) return null;
     return (
-        <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 8 }}>
             {items.map((q, i) => (
-                <Button key={i} appearance="outline" size="small" onClick={() => onPick(q)}>
-                    {q}
-                </Button>
+                <button key={i} className="chip" onClick={() => onPick(q)}>
+                    {q} →
+                </button>
             ))}
         </div>
     );

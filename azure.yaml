@@ -9,12 +9,10 @@ services:
     host: containerapp
     docker:
       path: Dockerfile
-      context: .
+      context: ../..
 
-  functions:
-    project: app/functions
-    language: python
-    host: function
+# NOTE: the `functions` (cloud ingestion) service is deferred to Stage 2.
+# Re-add it once infra/app/functions.bicep is wired into main.bicep.
 
 hooks:
   preprovision:

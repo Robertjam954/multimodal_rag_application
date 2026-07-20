@@ -174,6 +174,14 @@ def get_retriever() -> Retriever:
     name = os.getenv("DOCUMENT_RETRIEVER", "redis_notes").lower()
     if name == "redis_notes":
         return RedisNotesRetriever()
+    if name == "cosmos":
+        from core.cosmos_vector_retriever import CosmosVectorRetriever
+
+        return CosmosVectorRetriever()
+    if name == "azure_search":
+        from core.azure_search_retriever import AzureSearchRetriever
+
+        return AzureSearchRetriever()
     raise ValueError(f"unknown DOCUMENT_RETRIEVER: {name!r}")
 
 

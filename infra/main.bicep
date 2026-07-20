@@ -1,60 +1,65 @@
 /*
-  Main Bicep entry. Provisions a complete multimodal RAG environment:
-  - Azure OpenAI (chat + embeddings)
-  - Azure AI Search
-  - Azure Document Intelligence
-  - Azure Speech
-  - Azure AI Vision (multimodal)
-  - Azure AI Content Safety
-  - Azure AI Foundry Hub + Project
-  - Storage (Blob + ADLS Gen2 for user uploads)
-  - Cosmos DB (SQL for chat history + Gremlin for knowledge graph)
-  - Log Analytics + Application Insights
-  - Key Vault
-  - Container Apps environment + backend
-  - Functions app (for cloud ingestion skills)
+  Main Bicep entry — Stage 1 deploy against the EXISTING `ai-tutor` resources.
+  Provisions only the missing compute/observability and wires the backend
+  (keyless / Entra ID) to the pre-existing Foundry, Cosmos (vector + history),
+  Blob storage, and Key Vault.
+
+  New: Log Analytics, Application Insights, ACR, Container Apps Environment,
+       backend Container App, RBAC role assignments.
+  Existing (referenced): ai-tutor-foundry, cosmosdbaitutor7a79c7,
+       azureblobstorageai, Key Vault `ai-tutor`.
 */
 
-targetScope = 'subscription'
+targetScope = 'resourceGroup'
 
 param environmentName string
-param location string = deployment().location
+param location string = resourceGroup().location
+@description('Deploying user objectId (optional; reserved for dev grants).')
 param principalId string = ''
 
-@description('Azure OpenAI deployments')
-param chatGptDeploymentName string = 'gpt-4.1-mini'
-param chatGptModelName string = 'gpt-4.1-mini'
-param chatGptModelVersion string = '2025-04-14'
-param embeddingDeploymentName string = 'text-embedding-3-large'
-param embeddingModelName string = 'text-embedding-3-large'
+@description('Existing ai-tutor resources')
+param foundryName string = 'ai-tutor-foundry'
+param foundryProjectName string = 'ai-tutor-ms-azure-proj'
+param cosmosAccountName string = 'cosmosdbaitutor7a79c7'
+param storageAccountName string = 'azureblobstorageai'
+param keyVaultName string = 'ai-tutor'
 
+@description('Model deployments already present on the Foundry account')
+param chatGptDeploymentName string = 'gpt-4o-mini'
+param embeddingDeploymentName string = 'text-embedding-3-large'
+
+@description('Azure AI Search: optional runtime retrieval backend. Off by default (local Obsidian RAG is the active direction); flip on to provision the service.')
+param useAzureSearch bool = false
+param searchServiceName string = ''
 param searchIndexName string = 'rag-index'
-param useMultimodal bool = false
-param useGraphRag bool = true
+@allowed(['free', 'basic', 'standard'])
+param searchSkuName string = 'basic'
+@allowed(['disabled', 'free', 'standard'])
+param searchSemanticSearch string = 'free'
+@description('Primary retrieval backend for the container: azure_search or cosmos.')
+@allowed(['azure_search', 'cosmos'])
+param documentRetriever string = 'cosmos'
+
 param useVerifier bool = true
-param useHierarchicalAgents bool = false
-param useVoiceDemo bool = true
-param useSqlDemo bool = true
-param useContentSafety bool = false
 param useFeedback bool = true
 param rateLimitPerMin int = 30
 param maxTokensPerSession int = 200000
-param openaiFileSearchVectorStoreId string = ''
 param langsmithProject string = 'multimodal-rag'
 
 var tags = { 'azd-env-name': environmentName }
 var abbrs = loadJsonContent('abbreviations.json')
-var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
+var resourceToken = toLower(uniqueString(resourceGroup().id, environmentName))
+var foundryServicesEndpoint = 'https://${foundryName}.services.ai.azure.com'
+var foundryProjectEndpoint = '${foundryServicesEndpoint}/api/projects/${foundryProjectName}'
 
-resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
-  name: 'rg-${environmentName}'
-  location: location
-  tags: tags
+// ---- Existing data resources (referenced, not created) ----
+resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-08-15' existing = {
+  name: cosmosAccountName
 }
 
+// ---- New compute / observability ----
 module logAnalytics 'core/monitor/log-analytics.bicep' = {
   name: 'log'
-  scope: rg
   params: {
     name: '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
     location: location
@@ -63,8 +68,7 @@ module logAnalytics 'core/monitor/log-analytics.bicep' = {
 }
 
 module appInsights 'core/monitor/applicationinsights.bicep' = {
-  name: 'ai'
-  scope: rg
+  name: 'appi'
   params: {
     name: '${abbrs.insightsComponents}${resourceToken}'
     location: location
@@ -73,118 +77,17 @@ module appInsights 'core/monitor/applicationinsights.bicep' = {
   }
 }
 
-module keyvault 'core/security/keyvault.bicep' = {
-  name: 'kv'
-  scope: rg
+module acr 'core/host/container-registry.bicep' = {
+  name: 'acr'
   params: {
-    name: '${abbrs.keyVaultVaults}${resourceToken}'
+    name: 'acr${resourceToken}'
     location: location
     tags: tags
-    principalId: principalId
-  }
-}
-
-module openai 'core/ai/openai.bicep' = {
-  name: 'openai'
-  scope: rg
-  params: {
-    name: '${abbrs.cognitiveServicesAccounts}oai-${resourceToken}'
-    location: location
-    tags: tags
-    chatDeployment: { name: chatGptDeploymentName, model: chatGptModelName, version: chatGptModelVersion, capacity: 30 }
-    embedDeployment: { name: embeddingDeploymentName, model: embeddingModelName, version: '1', capacity: 100 }
-  }
-}
-
-module search 'core/search/search-services.bicep' = {
-  name: 'search'
-  scope: rg
-  params: {
-    name: '${abbrs.searchSearchServices}${resourceToken}'
-    location: location
-    tags: tags
-  }
-}
-
-module docintel 'core/ai/documentintelligence.bicep' = {
-  name: 'docintel'
-  scope: rg
-  params: {
-    name: '${abbrs.cognitiveServicesAccounts}di-${resourceToken}'
-    location: location
-    tags: tags
-  }
-}
-
-module speech 'core/ai/speech.bicep' = if (useVoiceDemo) {
-  name: 'speech'
-  scope: rg
-  params: {
-    name: '${abbrs.cognitiveServicesAccounts}sp-${resourceToken}'
-    location: location
-    tags: tags
-  }
-}
-
-module vision 'core/ai/vision.bicep' = if (useMultimodal) {
-  name: 'vision'
-  scope: rg
-  params: {
-    name: '${abbrs.cognitiveServicesAccounts}vis-${resourceToken}'
-    location: location
-    tags: tags
-  }
-}
-
-module contentSafety 'core/ai/contentsafety.bicep' = if (useContentSafety) {
-  name: 'safety'
-  scope: rg
-  params: {
-    name: '${abbrs.cognitiveServicesAccounts}cs-${resourceToken}'
-    location: location
-    tags: tags
-  }
-}
-
-module storage 'core/storage/storage-account.bicep' = {
-  name: 'storage'
-  scope: rg
-  params: {
-    name: '${abbrs.storageStorageAccounts}${resourceToken}'
-    location: location
-    tags: tags
-    containers: ['content', 'user-content', 'figures', 'recordings']
-    enableHnsForUserContent: true
-  }
-}
-
-module cosmosSql 'core/cosmos/cosmos-sql.bicep' = {
-  name: 'cosmos-sql'
-  scope: rg
-  params: {
-    name: '${abbrs.documentDBDatabaseAccounts}sql-${resourceToken}'
-    location: location
-    tags: tags
-    databaseName: 'chat'
-    containerName: 'history'
-  }
-}
-
-module cosmosGremlin 'core/cosmos/cosmos-gremlin.bicep' = if (useGraphRag) {
-  name: 'cosmos-gremlin'
-  scope: rg
-  params: {
-    name: '${abbrs.documentDBDatabaseAccounts}kg-${resourceToken}'
-    location: location
-    tags: tags
-    databaseName: 'kg'
-    graphName: 'graph'
   }
 }
 
 module containerEnv 'core/host/container-apps-environment.bicep' = {
   name: 'caenv'
-  scope: rg
   params: {
     name: '${abbrs.appManagedEnvironments}${resourceToken}'
     location: location
@@ -193,55 +96,97 @@ module containerEnv 'core/host/container-apps-environment.bicep' = {
   }
 }
 
+module search 'core/search/search-services.bicep' = if (useAzureSearch) {
+  name: 'search'
+  params: {
+    name: !empty(searchServiceName) ? searchServiceName : '${abbrs.searchSearchServices}${resourceToken}'
+    location: location
+    tags: tags
+    skuName: searchSkuName
+    semanticSearch: searchSemanticSearch
+  }
+}
+
 module backend 'app/backend.bicep' = {
   name: 'backend'
-  scope: rg
   params: {
     name: '${abbrs.appContainerApps}backend-${resourceToken}'
     location: location
     tags: union(tags, { 'azd-service-name': 'backend' })
     containerAppsEnvironmentId: containerEnv.outputs.id
     appInsightsConnectionString: appInsights.outputs.connectionString
+    containerRegistryName: acr.outputs.name
     env: [
-      { name: 'AZURE_OPENAI_SERVICE', value: openai.outputs.name }
+      // Chat / Responses -> Foundry PROJECT endpoint (ai.azure.com audience)
+      { name: 'AZURE_OPENAI_ENDPOINT', value: foundryProjectEndpoint }
+      { name: 'AZURE_OPENAI_AAD_SCOPE', value: 'https://ai.azure.com/.default' }
+      { name: 'AZURE_AI_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
+      { name: 'FOUNDRY_PROJECT_ENDPOINT', value: foundryProjectEndpoint }
+      // Embeddings -> Foundry ACCOUNT endpoint (cognitiveservices audience; project path 404s for embeddings)
+      { name: 'AZURE_OPENAI_EMBEDDING_ENDPOINT', value: foundryServicesEndpoint }
+      { name: 'AZURE_OPENAI_EMBEDDING_AAD_SCOPE', value: 'https://cognitiveservices.azure.com/.default' }
+      { name: 'AZURE_OPENAI_USE_AAD', value: 'true' }
       { name: 'AZURE_OPENAI_CHATGPT_DEPLOYMENT', value: chatGptDeploymentName }
+      { name: 'AZURE_AI_MODEL_DEPLOYMENT_NAME', value: chatGptDeploymentName }
+      { name: 'AZURE_OPENAI_EMBEDDING_DEPLOYMENT', value: embeddingDeploymentName }
       { name: 'AZURE_OPENAI_EMB_DEPLOYMENT', value: embeddingDeploymentName }
-      { name: 'AZURE_SEARCH_SERVICE', value: search.outputs.name }
+      { name: 'DOCUMENT_RETRIEVER', value: documentRetriever }
+      { name: 'AZURE_SEARCH_SERVICE', value: useAzureSearch ? search!.outputs.name : '' }
       { name: 'AZURE_SEARCH_INDEX', value: searchIndexName }
-      { name: 'AZURE_DOCUMENTINTELLIGENCE_ENDPOINT', value: docintel.outputs.endpoint }
-      { name: 'AZURE_STORAGE_ACCOUNT', value: storage.outputs.name }
-      { name: 'AZURE_STORAGE_CONTAINER', value: 'content' }
-      { name: 'AZURE_USER_STORAGE_ACCOUNT', value: storage.outputs.name }
-      { name: 'AZURE_USER_STORAGE_CONTAINER', value: 'user-content' }
-      { name: 'AZURE_COSMOSDB_ENDPOINT', value: cosmosSql.outputs.endpoint }
+      { name: 'AZURE_SEARCH_SEMANTIC_RANKER', value: (useAzureSearch && searchSemanticSearch != 'disabled') ? 'true' : 'false' }
+      { name: 'AZURE_COSMOSDB_ENDPOINT', value: cosmos.properties.documentEndpoint }
+      { name: 'AZURE_COSMOSDB_VECTOR_DATABASE', value: 'rag' }
+      { name: 'AZURE_COSMOSDB_VECTOR_CONTAINER', value: 'documents' }
       { name: 'AZURE_COSMOSDB_CHAT_DATABASE', value: 'chat' }
       { name: 'AZURE_COSMOSDB_CHAT_CONTAINER', value: 'history' }
-      { name: 'AZURE_COSMOSDB_ACCOUNT', value: useGraphRag ? cosmosGremlin.outputs.name : '' }
-      { name: 'AZURE_COSMOSDB_GRAPH_DATABASE', value: 'kg' }
-      { name: 'AZURE_COSMOSDB_GRAPH_CONTAINER', value: 'graph' }
+      { name: 'USE_CHAT_HISTORY_COSMOS', value: 'true' }
+      { name: 'AZURE_STORAGE_ACCOUNT', value: storageAccountName }
+      { name: 'AZURE_STORAGE_CONTAINER', value: 'content' }
+      { name: 'AZURE_USER_STORAGE_ACCOUNT', value: storageAccountName }
+      { name: 'AZURE_USER_STORAGE_CONTAINER', value: 'user-content' }
       { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.outputs.connectionString }
-      { name: 'USE_MULTIMODAL', value: string(useMultimodal) }
-      { name: 'USE_GRAPHRAG', value: string(useGraphRag) }
+      { name: 'USE_GRAPHRAG', value: 'false' }
+      { name: 'USE_MULTIMODAL', value: 'false' }
+      { name: 'USE_VOICE_DEMO', value: 'false' }
+      { name: 'USE_SQL_DEMO', value: 'false' }
+      { name: 'USE_CONTENT_SAFETY', value: 'false' }
+      { name: 'USE_PII_REDACTION', value: 'false' }
+      { name: 'USE_VECTOR_SEARCH', value: 'true' }
       { name: 'USE_VERIFIER', value: string(useVerifier) }
-      { name: 'USE_VOICE_DEMO', value: string(useVoiceDemo) }
-      { name: 'USE_SQL_DEMO', value: string(useSqlDemo) }
-      { name: 'USE_CONTENT_SAFETY', value: string(useContentSafety) }
       { name: 'USE_FEEDBACK', value: string(useFeedback) }
       { name: 'RATE_LIMIT_PER_MIN', value: string(rateLimitPerMin) }
       { name: 'MAX_TOKENS_PER_SESSION', value: string(maxTokensPerSession) }
-      { name: 'OPENAI_FILE_SEARCH_VECTOR_STORE_ID', value: openaiFileSearchVectorStoreId }
       { name: 'LANGSMITH_PROJECT', value: langsmithProject }
       { name: 'RUNNING_IN_PRODUCTION', value: 'true' }
     ]
   }
 }
 
+module rbac 'app/rbac.bicep' = {
+  name: 'rbac'
+  params: {
+    principalId: backend.outputs.identityPrincipalId
+    foundryName: foundryName
+    cosmosName: cosmosAccountName
+    storageName: storageAccountName
+    keyVaultName: keyVaultName
+    acrName: acr.outputs.name
+    searchName: useAzureSearch ? search!.outputs.name : ''
+    userPrincipalId: principalId
+  }
+}
+
 output AZURE_LOCATION string = location
 output AZURE_TENANT_ID string = tenant().tenantId
-output AZURE_RESOURCE_GROUP string = rg.name
-output AZURE_OPENAI_SERVICE string = openai.outputs.name
-output AZURE_SEARCH_SERVICE string = search.outputs.name
-output AZURE_DOCUMENTINTELLIGENCE_ENDPOINT string = docintel.outputs.endpoint
-output AZURE_STORAGE_ACCOUNT string = storage.outputs.name
+output AZURE_RESOURCE_GROUP string = resourceGroup().name
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = acr.outputs.loginServer
+output AZURE_CONTAINER_REGISTRY_NAME string = acr.outputs.name
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = appInsights.outputs.connectionString
+output AZURE_OPENAI_ENDPOINT string = foundryServicesEndpoint
+output AZURE_AI_PROJECT_ENDPOINT string = foundryProjectEndpoint
+output AZURE_COSMOSDB_ENDPOINT string = cosmos.properties.documentEndpoint
+output AZURE_SEARCH_SERVICE string = useAzureSearch ? search!.outputs.name : ''
+output AZURE_SEARCH_ENDPOINT string = useAzureSearch ? search!.outputs.endpoint : ''
+output AZURE_SEARCH_INDEX string = searchIndexName
+output CLOUD_DOCUMENT_RETRIEVER string = documentRetriever
 output BACKEND_URI string = backend.outputs.uri

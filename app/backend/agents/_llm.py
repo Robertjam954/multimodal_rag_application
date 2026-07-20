@@ -14,8 +14,19 @@ from typing import Any, AsyncIterator
 logger = logging.getLogger(__name__)
 
 
+def _configured() -> bool:
+    """True when a real LLM is reachable (Foundry project endpoint, classic Azure
+    OpenAI, external OpenAI, or local Ollama)."""
+    return bool(
+        os.getenv("AZURE_OPENAI_ENDPOINT")
+        or os.getenv("AZURE_OPENAI_SERVICE")
+        or os.getenv("OPENAI_API_KEY")
+        or os.getenv("OLLAMA_BASE_URL")
+    )
+
+
 def _client():
-    """Return an AsyncOpenAI client configured for Azure / OpenAI / local."""
+    """Return an AsyncOpenAI client configured for Foundry / Azure / OpenAI / local."""
     mode = os.getenv("MODE", "azure").lower()
     if mode == "local":
         # Ollama via OpenAI-compatible endpoint
@@ -25,6 +36,12 @@ def _client():
             base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
             api_key=os.getenv("OLLAMA_API_KEY", "sk-local"),
         )
+    # Foundry project endpoint + Entra ID: reuse the single AAD-configured client
+    # (core.aoai_client builds AsyncOpenAI against AZURE_OPENAI_ENDPOINT + /openai/v1).
+    if os.getenv("AZURE_OPENAI_ENDPOINT"):
+        from core.aoai_client import get_client
+
+        return get_client()
     if os.getenv("AZURE_OPENAI_SERVICE"):
         from openai import AsyncAzureOpenAI
 
@@ -49,7 +66,7 @@ def _model_for(role: str) -> str:
 
 async def complete(system: str, user: str, role: str = "chat", **kwargs: Any) -> str:
     """Non-streaming completion. Returns assistant text."""
-    if not (os.getenv("AZURE_OPENAI_SERVICE") or os.getenv("OPENAI_API_KEY") or os.getenv("OLLAMA_BASE_URL")):
+    if not _configured():
         logger.warning("No LLM configured; returning deterministic stub for tests")
         return _stub_response(system, user)
     client = _client()
@@ -62,7 +79,7 @@ async def complete(system: str, user: str, role: str = "chat", **kwargs: Any) ->
 
 
 async def stream(system: str, user: str, role: str = "chat", **kwargs: Any) -> AsyncIterator[str]:
-    if not (os.getenv("AZURE_OPENAI_SERVICE") or os.getenv("OPENAI_API_KEY") or os.getenv("OLLAMA_BASE_URL")):
+    if not _configured():
         for chunk in _stub_response(system, user).split(" "):
             await asyncio.sleep(0)
             yield chunk + " "

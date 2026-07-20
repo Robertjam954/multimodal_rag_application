@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Multimodal RAG AI Tutor</title>
+<meta name="description" content="A multimodal Retrieval-Augmented Generation tutor: PDF ingestion, Cosmos DB vector search, and verifier-gated multi-agent QA on Azure AI Foundry - keyless via Entra ID." />
+<meta property="og:title" content="Multimodal RAG AI Tutor" />
+<meta property="og:description" content="PDF ingestion, Cosmos DB vector search, and verifier-gated multi-agent QA on Azure AI Foundry." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0b0f17;
+    --panel: #121826;
+    --panel-2: #0f1420;
+    --border: #1e2838;
+    --text: #e6ebf5;
+    --muted: #9aa7bd;
+    --accent: #6ea8fe;
+    --accent-2: #8b7cff;
+    --good: #4ade80;
+    --chip: #182234;
+    --radius: 14px;
+    --max: 1080px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: radial-gradient(1200px 600px at 70% -10%, #16233b 0%, transparent 60%),
+                radial-gradient(900px 500px at 0% 0%, #1a1730 0%, transparent 55%),
+                var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(10px);
+    background: rgba(11,15,23,0.72);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.01em; }
+  .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 14px var(--accent); }
+  .nav-links { display: flex; gap: 22px; align-items: center; font-size: 14px; }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+  /* Hero */
+  header.hero { padding: 84px 0 56px; }
+  .status {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--muted);
+    background: var(--chip); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .status .live { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 10px var(--good); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  h1 {
+    font-size: clamp(34px, 6vw, 58px);
+    line-height: 1.05; letter-spacing: -0.03em; margin: 0 0 18px;
+    font-weight: 800;
+    background: linear-gradient(180deg, #ffffff 0%, #b7c4dc 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lede { font-size: clamp(16px, 2.2vw, 20px); color: var(--muted); max-width: 680px; margin: 0 0 32px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 14px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 13px 22px; border-radius: 11px; font-weight: 600; font-size: 15px;
+    border: 1px solid transparent; cursor: pointer;
+  }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #0a0e16; }
+  .btn.primary:hover { text-decoration: none; filter: brightness(1.08); }
+  .btn.ghost { background: var(--panel); border-color: var(--border); color: var(--text); }
+  .btn.ghost:hover { text-decoration: none; border-color: #33415a; }
+  .btn .arrow { transition: transform .2s; }
+  .btn:hover .arrow { transform: translateX(3px); }
+
+  /* Sections */
+  section { padding: 46px 0; }
+  .eyebrow { font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); font-weight: 600; margin-bottom: 12px; }
+  h2 { font-size: clamp(24px, 3.4vw, 34px); letter-spacing: -0.02em; margin: 0 0 10px; font-weight: 700; }
+  .section-sub { color: var(--muted); max-width: 640px; margin: 0 0 30px; }
+
+  /* Feature grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card {
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 22px;
+    transition: transform .2s, border-color .2s;
+  }
+  .card:hover { transform: translateY(-3px); border-color: #33415a; }
+  .card .ico { font-size: 22px; margin-bottom: 12px; }
+  .card h3 { margin: 0 0 8px; font-size: 17px; font-weight: 650; }
+  .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  /* Flow */
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; }
+  .flow .step {
+    flex: 1 1 150px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; position: relative;
+  }
+  .flow .step .n { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); }
+  .flow .step h4 { margin: 6px 0 4px; font-size: 15px; }
+  .flow .step p { margin: 0; font-size: 13px; color: var(--muted); }
+
+  /* Stack chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    background: var(--chip); border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: 9px; color: #c3cfe4;
+  }
+  .chip b { color: var(--accent); font-weight: 500; }
+
+  /* Architecture panel */
+  .arch {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 26px; font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px; color: var(--muted); overflow-x: auto;
+  }
+  .arch .l { color: var(--text); }
+  .arch .a { color: var(--accent); }
+  .arch .g { color: var(--good); }
+
+  footer { border-top: 1px solid var(--border); padding: 34px 0 60px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; }
+  .note { font-size: 12.5px; color: #6b7789; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span> Multimodal RAG Tutor</div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#stack">Stack</a>
+      <a href="https://github.com/Robertjam954/multimodal_rag_application">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="status"><span class="live"></span> Live demo running on Azure</span>
+    <h1>A multimodal RAG tutor that cites its sources.</h1>
+    <p class="lede">
+      Upload a PDF, ask a question, and get a grounded answer with page-level citations - produced by a
+      verifier-gated multi-agent loop over an Azure Cosmos DB vector store, powered by Azure AI Foundry
+      and secured end-to-end with Entra ID (no keys).
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://ca-backend-terrjvrcuwxim.livelyisland-19dcdcfb.eastus2.azurecontainerapps.io" target="_blank" rel="noopener">
+        Try the live demo <span class="arrow">-&gt;</span>
+      </a>
+      <a class="btn ghost" href="https://github.com/Robertjam954/multimodal_rag_application" target="_blank" rel="noopener">
+        View source
+      </a>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="eyebrow">What it does</div>
+    <h2>Retrieval you can trust</h2>
+    <p class="section-sub">Every capability is wired to real Azure services - this is a running system, not a mockup.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="ico">📄</div>
+        <h3>PDF ingestion</h3>
+        <p>Drop in a document - it's parsed, chunked, embedded with text-embedding-3-large, and indexed into Cosmos DB, ready to query in seconds.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔎</div>
+        <h3>Cosmos vector search</h3>
+        <p>Integrated NoSQL vector search (diskANN, cosine, 3072-dim) retrieves the most relevant passages via <code>VectorDistance()</code>.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🧭</div>
+        <h3>Multi-agent QA</h3>
+        <p>A Router -&gt; Retriever -&gt; Answerer -&gt; Verifier loop. The Verifier gates claims against evidence so answers stay grounded.</p>
+      </div>
+      <div class="card">
+        <div class="ico">📌</div>
+        <h3>Page-level citations</h3>
+        <p>Answers carry inline <code>[doc:page]</code> markers that deep-link back to the exact source passage.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🔐</div>
+        <h3>Keyless / Entra ID</h3>
+        <p>No secrets in the app. Every call - Foundry, Cosmos, Blob - authenticates through managed identity and Entra ID.</p>
+      </div>
+      <div class="card">
+        <div class="ico">⚡</div>
+        <h3>Streaming chat</h3>
+        <p>Tokens, citations, and the verifier verdict stream over SSE for a responsive, transparent answer experience.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how" style="background: linear-gradient(180deg, transparent, rgba(18,24,38,0.5), transparent);">
+  <div class="wrap">
+    <div class="eyebrow">How it works</div>
+    <h2>From upload to grounded answer</h2>
+    <p class="section-sub">The full path a question travels, end to end.</p>
+    <div class="flow">
+      <div class="step"><div class="n">01</div><h4>Ingest</h4><p>PDF parsed &amp; chunked, each chunk embedded and upserted to Cosmos.</p></div>
+      <div class="step"><div class="n">02</div><h4>Retrieve</h4><p>Query embedded, nearest passages pulled via Cosmos vector search.</p></div>
+      <div class="step"><div class="n">03</div><h4>Answer</h4><p>gpt-4o-mini drafts an answer with inline citation markers.</p></div>
+      <div class="step"><div class="n">04</div><h4>Verify</h4><p>Verifier checks each claim against the retrieved evidence.</p></div>
+      <div class="step"><div class="n">05</div><h4>Stream</h4><p>Answer, citations &amp; verdict stream back to the browser.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <div class="eyebrow">Under the hood</div>
+    <h2>Architecture</h2>
+    <p class="section-sub">A Quart backend (with the React frontend bundled in) on Azure Container Apps, backed entirely by managed Azure services.</p>
+    <div class="arch">
+<span class="l">Browser (React 19 + Vite)</span><br />
+&nbsp;&nbsp;│ HTTPS / SSE<br />
+<span class="l">Quart backend</span> · <span class="g">Azure Container Apps</span> (keyless, Entra ID)<br />
+&nbsp;&nbsp;├─ <span class="a">Azure AI Foundry</span> — gpt-4o-mini (chat) · text-embedding-3-large (embeddings)<br />
+&nbsp;&nbsp;├─ <span class="a">Azure Cosmos DB for NoSQL</span> — vector store + chat history<br />
+&nbsp;&nbsp;├─ <span class="a">Azure Blob Storage</span> — uploaded PDFs<br />
+&nbsp;&nbsp;└─ <span class="a">Application Insights</span> — OpenTelemetry tracing<br />
+    </div>
+    <div style="height:22px"></div>
+    <div class="chips">
+      <span class="chip"><b>Azure</b> Container Apps</span>
+      <span class="chip"><b>Azure</b> AI Foundry</span>
+      <span class="chip"><b>Cosmos DB</b> vector search</span>
+      <span class="chip"><b>Quart</b> · Python 3.11</span>
+      <span class="chip"><b>React 19</b> · Vite · Fluent UI</span>
+      <span class="chip"><b>Entra ID</b> managed identity</span>
+      <span class="chip"><b>Bicep</b> · azd</span>
+      <span class="chip"><b>OpenTelemetry</b></span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap" style="text-align:center;">
+    <h2>See it answer your questions</h2>
+    <p class="section-sub" style="margin: 0 auto 26px;">The demo is live now. Upload a PDF or ask about the sample papers already indexed.</p>
+    <a class="btn primary" href="https://ca-backend-terrjvrcuwxim.livelyisland-19dcdcfb.eastus2.azurecontainerapps.io" target="_blank" rel="noopener">
+      Open the live demo <span class="arrow">-&gt;</span>
+    </a>
+    <p class="note">Cold start may take a few seconds if the app has scaled down.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Built by Robert James · Azure AI Engineering portfolio</div>
+    <div class="nav-links">
+      <a href="https://github.com/Robertjam954/multimodal_rag_application">Source</a>
+      <a href="https://ca-backend-terrjvrcuwxim.livelyisland-19dcdcfb.eastus2.azurecontainerapps.io">Live demo</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

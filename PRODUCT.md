@@ -7,11 +7,13 @@ and it refuses to answer rather than fabricate when the evidence is not there.
 
 ## What it does
 
-The system ingests source material, indexes it into vector, graph, and citation stores,
-and answers questions through a multi-agent loop that streams the response while a Verifier
-agent checks each claim against the retrieved evidence in real time. Answers carry
-citations rendered as page/timestamp-anchored evidence, deep-linked to the source PDF page
-or audio position.
+The system ingests source material, indexes it into a vector store (with optional graph
+and citation stores), and answers questions through a multi-agent loop that streams the
+response while a Verifier agent checks each claim against the retrieved evidence in real
+time. Answers carry citations anchored to the source. Retrieval is served by a pluggable
+document retriever; the deployed configuration uses an Azure Cosmos DB (NoSQL) vector
+store. Optional capabilities below are gated behind feature flags and are turned off in
+the current deployment.
 
 The product surfaces four demonstrations:
 
@@ -24,10 +26,11 @@ The product surfaces four demonstrations:
 
 ## Key features
 
-- **PDF ingestion and Q&A.** Upload PDFs; they are extracted with Azure Document
-  Intelligence, chunked sentence-aware, embedded, and indexed into Azure AI Search,
-  GraphRAG, and an OpenAI file_search vector store. When multimodal mode is on, figures are
-  cropped, captioned, and embedded so questions can reference images.
+- **PDF ingestion and Q&A.** Upload PDFs; they are extracted (Azure Document Intelligence,
+  with a PyPDF fallback), chunked sentence-aware, embedded, and written to the configured
+  vector store (Cosmos DB NoSQL in the deployment). When enabled, chunks are also pushed to
+  an OpenAI file_search vector store and a GraphRAG graph. When multimodal mode is on,
+  figures are cropped, captioned, and embedded so questions can reference images.
 - **Voice ingestion and Q&A.** Record live or upload audio; Azure Speech-to-Text
   transcribes with speaker diarization, partial transcripts stream to the UI in real time,
   and the resulting utterances enter the same unified knowledge graph and vector store.
@@ -52,8 +55,9 @@ The product surfaces four demonstrations:
   a per-session token cost cap.
 - **Observability.** End-to-end tracing in LangSmith and Azure Monitor (OpenTelemetry), with
   a per-session cost meter surfaced live in the chat stream.
-- **Local-only mode.** A no-Azure path swaps in Ollama, faster-whisper, FAISS, and SQLite so
-  contributors can run the system without cloud credentials.
+- **Local development.** The backend runs locally against `app/backend/.env`; by default it
+  uses a Redis-backed notes retriever instead of Cosmos. Optional local fallbacks
+  (`faiss-cpu`, `faster-whisper`) are declared in `requirements.in`.
 
 ## Intended users and use cases
 
@@ -70,6 +74,7 @@ the golden evaluation set, preferring to refuse over fabricate on the remainder.
 
 ## How it is delivered
 
-The application runs as a containerized Azure deployment (provisioned and deployed with
-`azd` and Bicep) and is showcased through a Jekyll portfolio site that links to the live
-demo. A local-only mode is available for development and offline use.
+The application runs as a containerized Azure deployment on Azure Container Apps
+(provisioned and deployed with `azd` and Bicep, keyless via Entra ID managed identity)
+and is showcased through a static portfolio site (`site/`, served on GitHub Pages) that
+links to the live demo. A local development mode is available.

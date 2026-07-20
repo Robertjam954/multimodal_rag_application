@@ -28,11 +28,12 @@ class ChatReadRetrieveReadApproach(Approach):
         # Query rewrite
         rewritten = await self._rewrite_query(question, messages, overrides)
 
-        # Retrieve
-        from agents.tools import file_search, graph_search
+        # Retrieve from the Cosmos NoSQL vector store (DOCUMENT_RETRIEVER=cosmos).
+        from core.document_retriever import get_retriever
 
-        text_results = await file_search(query=rewritten, k=overrides.get("top", 5))
-        evidence = DataPoints(text=[r["content"] for r in text_results], citations=[])
+        docs = await get_retriever().retrieve(rewritten, k=overrides.get("top", 5))
+        text_results = [{"content": d.content} for d in docs]
+        evidence = DataPoints(text=[d.content for d in docs], citations=[])
 
         # Answer (no Verifier here; that path is in MultiAgentApproach)
         from agents.answerer import answer

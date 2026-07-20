@@ -6,14 +6,22 @@ Operating manual for Claude Code working in this repository. Keep this file 100%
 
 ## 1. Project Overview
 
-**multimodal_rag_application** is a multimodal Retrieval-Augmented Generation system with a multi-agent QA loop, voice + PDF ingestion, GraphRAG, citation-grade file search, a Verifier agent, a SchemaFlow-style SQL agent, and full LangSmith + Azure Monitor tracing. It is paired with a Jekyll portfolio site (under `site/`) that surfaces the deployed demo.
+**multimodal_rag_application** is a multimodal Retrieval-Augmented Generation system with a multi-agent QA loop, voice + PDF ingestion, an optional GraphRAG layer, citation-grade file search, a Verifier agent, a SchemaFlow-style SQL agent, and LangSmith + Azure Monitor tracing. It is paired with a static portfolio site (under `site/`) that surfaces the deployed demo.
 
-The architecture is a heavy mirror of [Azure-Samples/azure-search-openai-demo](https://github.com/Azure-Samples/azure-search-openai-demo) with extensions for GraphRAG, multi-agent orchestration, the Verifier, voice ingestion, content safety, and LangSmith tracing. Local-only patterns are inspired by `~/loc/repos/local-ai-transcript-app` (Whisper + FastAPI) and `~/loc/repos/pdflocal` (react-pdf split pane), but the Azure demo is canonical.
+The architecture borrows patterns from [Azure-Samples/azure-search-openai-demo](https://github.com/Azure-Samples/azure-search-openai-demo) with extensions for GraphRAG, multi-agent orchestration, the Verifier, voice ingestion, content safety, and LangSmith tracing.
+
+> **DEPLOYED REALITY (read first).** The code implements far more than the current deployment turns on. `infra/main.bicep` is a Stage-1 deploy against the pre-existing `ai-tutor` resource group (region eastus2). It creates only Log Analytics, Application Insights, ACR, a Container Apps environment, the backend Container App, and Entra ID role assignments; it references (does not recreate) the existing Foundry account/project (`ai-tutor-foundry` / `ai-tutor-ms-azure-proj`), Cosmos account (`cosmosdbaitutor7a79c7`), Blob storage (`azureblobstorageai`), and Key Vault (`ai-tutor`). Deployed facts:
+> - **Chat/Responses + embeddings** go to the Azure AI Foundry project/account endpoints; there is no standalone Azure OpenAI resource.
+> - **Retrieval is `DOCUMENT_RETRIEVER=cosmos`** - a Cosmos DB NoSQL vector store (`core/cosmos_vector_retriever.py`, db `rag` / container `documents`). Local dev defaults to `redis_notes`. **Azure AI Search is NOT the runtime retriever** (it lives only in the ingestion-side `prepdocslib/searchmanager.py`).
+> - **Keyless / Entra ID only.** System-assigned managed identity + RBAC in `infra/app/rbac.bicep`. No API keys deployed.
+> - **Flags on in the deploy:** `USE_VERIFIER`, `USE_VECTOR_SEARCH`, `USE_CHAT_HISTORY_COSMOS`, feedback. **Off:** `USE_GRAPHRAG`, `USE_MULTIMODAL`, `USE_VOICE_DEMO`, `USE_SQL_DEMO`, `USE_CONTENT_SAFETY`, `USE_PII_REDACTION`. `graph_search` / `file_search` fall back to stubs when unconfigured.
+> - **Not deployed:** Azure AI Search, Speech, Vision, Content Safety, Document Intelligence, Cosmos Gremlin, Azure Managed Redis, and PostgreSQL. Bicep modules exist under `infra/core/` for several of these but are not composed into `main.bicep`. Redis is used only as an optional local cache (no-op when `REDIS_URL` unset); PostgreSQL/pgvector is aspirational (no code module). The `app/functions/` cloud-ingestion service is deferred (not in `azure.yaml`).
+> - **The `docs/*.md` files referenced throughout this repo do not exist** (only `docs/hierarchical_agent_teams_template.ipynb` and `docs/images/`). Treat links to `docs/*.md` as TODOs, not sources.
 
 ### Primary capabilities
 
-- Upload PDFs - indexed via Azure Document Intelligence -> sentence-aware chunking (~1000 chars, 10% overlap) -> embeddings -> Azure AI Search + GraphRAG community graph + OpenAI file_search vector store.
-- Record / upload audio - Azure Speech-to-Text with diarization -> utterance entities -> same unified graph + vector store.
+- Upload PDFs - extracted via Azure Document Intelligence (PyPDF fallback) -> sentence-aware chunking (~1000 chars, 10% overlap) -> embeddings -> configured vector store (Cosmos NoSQL when deployed); optionally also GraphRAG graph + OpenAI file_search vector store.
+- Record / upload audio - Azure Speech-to-Text with diarization -> utterance entities (optional; `USE_VOICE_DEMO`).
 - Multi-agent chat: Router -> Retriever (parallel graph_search + file_search) -> Answerer -> Verifier (claim-grounding gate) with streaming responses.
 - SchemaFlow SQL demo: Parse -> Impact -> Plan -> SQL agents over a sample TCGA-like clinical warehouse.
 - Citations rendered as page/timestamp-anchored evidence pills, deep-linked to the source PDF page or audio timestamp.
@@ -49,10 +57,8 @@ The architecture is a heavy mirror of [Azure-Samples/azure-search-openai-demo](h
 - **Build:** Vite -> `app/frontend/build/`, served as static by Quart in production.
 
 ### Static portfolio (`site/`)
-- **Framework:** Jekyll (GitHub Pages).
-- **Layouts:** `_layouts/default.html`, `_includes/{nav,footer,head}.html`.
-- **Plugins:** `jekyll-feed` (RSS), `jekyll-sitemap`, `jekyll-seo-tag` (OpenGraph + Twitter cards + JSON-LD).
-- **Deployed:** GitHub Pages via `.github/workflows/pages.yml` from `site/`. The deployed demo URL is injected via `DEMO_URL` env var at build.
+- **Framework:** none - a single self-contained static `site/index.html` (inline CSS, Google Fonts). `_layouts/` and `_includes/` folders exist but `_posts/` is empty and there is no `_config.yml` or `Gemfile` (not a Jekyll build).
+- **Deployed:** GitHub Pages via `.github/workflows/pages.yml`, which uploads `site/` as-is with `.nojekyll` (no Jekyll build step).
 
 ### Infra (`infra/`)
 - **Bicep + azd.** Modules under `infra/core/` (ai, host, storage, security, monitor, search, cosmos).
@@ -92,13 +98,11 @@ multimodal_rag_application/
 ├── .pre-commit-config.yaml .markdownlint-cli2.jsonc ps-rule.yaml
 ├── locustfile.py
 │
-├── site/                                   # Jekyll portfolio
-│   ├── _config.yml Gemfile
-│   ├── index.md live-demos.md projects.md blog.md
-│   ├── _layouts/default.html
-│   ├── _includes/{head,nav,footer}.html
-│   ├── _posts/*.md
-│   └── assets/{css,images}/
+├── site/                                   # static portfolio (no Jekyll build)
+│   ├── index.html                          # self-contained page
+│   ├── .nojekyll
+│   ├── _layouts/ _includes/ _posts/ (empty)
+│   └── assets/
 │
 ├── app/
 │   ├── start.sh start.ps1
@@ -208,7 +212,7 @@ multimodal_rag_application/
 │
 ├── data/{papers,audio,graphs}/
 ├── .devcontainer/{devcontainer.json,Dockerfile,docker-compose.yml,post-create.sh}
-└── .github/workflows/{pages,azure-dev,tests,eval-nightly}.yml
+└── .github/workflows/{pages,update-claude-md}.yml   # (only these exist; no azure-dev/tests/eval workflows yet)
 ```
 
 ---
@@ -229,22 +233,18 @@ Quart backend (Container Apps)
   ├── /chat_history    (Cosmos SQL + browser localStorage fallback)
   └── /feedback        (thumbs + free-text -> eval pool)
   │
-  ├── Azure OpenAI / Foundry (gpt-4.1-mini, text-embedding-3-large, gpt-4o vision, o-series reasoning)
-  ├── Azure AI Search (vector + semantic ranker, optional Knowledge Agent)
-  ├── Azure Document Intelligence
-  ├── Azure Speech-to-Text (long-form + diarization)
-  ├── Azure AI Vision (image embeddings, multimodal)
-  ├── Azure AI Content Safety (inference-time + ingestion-time)
-  ├── Azure AI Language (PII redaction)
-  ├── Azure Blob Storage / ADLS Gen2 (raw + figures + per-user paths)
-  ├── Azure Cosmos DB (NoSQL: JSON docs + chat history; Gremlin: knowledge graph)
-  ├── Azure Managed Redis (semantic cache + short-term memory + app cache/rate-limit)
-  ├── Azure DB for PostgreSQL (pgvector + azure_ai: secondary relational + vector analytics)
-  ├── Azure AI Foundry Hub + Project (adversarial sim, hosted agents)
-  ├── Application Insights (OTel sink)
-  └── Key Vault
-  │
-  └── External: OpenAI Responses file_search (citation-grade), LangSmith (tracing)
+  ├── Azure AI Foundry project + account (chat/Responses + embeddings)   [deployed]
+  ├── Azure Cosmos DB NoSQL: vector store (primary retrieval) + chat history  [deployed]
+  ├── Azure Blob Storage / ADLS Gen2 (raw + figures + per-user paths)    [deployed]
+  ├── Application Insights (OTel sink) + Key Vault                       [deployed]
+  ├── OpenAI Responses file_search (citation-grade)                [optional/code]
+  ├── Cosmos DB Gremlin knowledge graph + GraphRAG                 [optional/code]
+  ├── Azure Document Intelligence (PDF layout/OCR)                 [optional/code]
+  ├── Azure Speech-to-Text (long-form + diarization)              [optional/code]
+  ├── Azure AI Content Safety + Azure AI Language (PII)            [optional/code]
+  ├── Azure AI Search (ingestion-side only, not runtime retrieval) [optional/code]
+  ├── Redis (semantic/embedding cache; no-op when REDIS_URL unset) [optional/code]
+  └── LangSmith (tracing)                                          [optional/code]
 ```
 
 ### Chat query flow
@@ -286,22 +286,21 @@ Quart backend (Container Apps)
 
 ### Data and storage tier (canonical database choices)
 
-Authoritative mapping of which datastore owns what. When adding a feature, put its data in the store named here - do not stand up a parallel store for the same concern. Vector search has three capable engines in the wider stack (AI Search, Cosmos, pgvector); for **this** app **Azure AI Search is primary** and the others are scoped as below.
+Authoritative mapping of which datastore owns what. The retrieval backend is pluggable via `DOCUMENT_RETRIEVER` (`core/document_retriever.py`). For **this** app the deployed retriever is **Cosmos DB NoSQL vector store**; local dev defaults to a Redis-backed notes store. Azure AI Search is NOT a runtime retrieval backend here.
 
 | Concern | Store / service | What it owns | Notes |
 |---|---|---|---|
-| **Primary vector search + retrieval** | **Azure AI Search** | chunk embeddings + text + semantic ranker (+ optional Knowledge Agent) | Canonical RAG retrieval. `prepdocslib/searchmanager.py`, `approaches/chatreadretrieveread.py`. |
-| Citation vector store | OpenAI Responses `file_search` | per-file vector store for citation-grade spans | Kept in sync with AI Search by `prepdocs.sh`. External (OpenAI), not Azure. |
-| **JSON documents + conversation history** | **Azure Cosmos DB for NoSQL** | chat sessions/messages, feedback, run + eval JSON, ingestion manifests | `chat_history/cosmosdb.py`. Durable source of truth for conversations. Cosmos native vector index exists but is **not** the primary vector path here. |
-| Knowledge graph | Azure Cosmos DB for Apache Gremlin | entities / edges / community nodes | `graphrag/cosmos_gremlin.py`. Same Cosmos account, Gremlin API. |
-| **In-memory cache + working memory** | **Azure Managed Redis** | (1) semantic / LLM-response cache, (2) short-term conversation + agent scratch memory, (3) app cache: session tokens, rate-limit counters, feature flags | New tier. Ephemeral / TTL'd only. Cosmos remains the durable record; never treat Redis as the source of truth. |
-| **Secondary relational + vector analytics** | **Azure Database for PostgreSQL Flexible Server** (`pgvector` + `azure_ai`) | structured analytics tables + embeddings for SQL/analytics workloads (SchemaFlow clinical warehouse, cross-corpus joins) | Secondary to AI Search. `azure_ai` extension generates embeddings in-DB via `azure_openai.create_embeddings(...)`; store in a `vector` column; HNSW index for ANN. Shared design with the biomed repo (`agentic_research_team`). |
+| **Primary vector search + retrieval (deployed)** | **Azure Cosmos DB for NoSQL** vector store | chunk embeddings + text | `core/cosmos_vector_retriever.py`; db `rag`, container `documents`. Selected by `DOCUMENT_RETRIEVER=cosmos`. |
+| Primary retrieval (local dev default) | Redis-backed notes store | notes chunks + embeddings | `core/document_retriever.py:RedisNotesRetriever` (`DOCUMENT_RETRIEVER=redis_notes`). Requires `REDIS_URL`. |
+| Citation vector store (optional) | OpenAI Responses `file_search` | per-file vector store for citation-grade spans | `agents/tools.py:file_search`; stubs when no vector store id/key. External (OpenAI), not Azure. |
+| **Conversation history** | **Azure Cosmos DB for NoSQL** | chat sessions/messages | `chat_history/cosmosdb.py` (db `chat`, container `history`); registered only when `USE_CHAT_HISTORY_COSMOS=true`. |
+| Knowledge graph (optional) | Azure Cosmos DB for Apache Gremlin | entities / edges / community nodes | `graphrag/cosmos_gremlin.py`. Not deployed (`USE_GRAPHRAG=false`); `graph_search` stubs without a Cosmos Gremlin account. |
+| In-memory cache (optional) | Redis (semantic + embedding cache) | LLM-response cache keyed by embedding similarity; embedding cache | `core/semantic_cache.py`. No-op when `REDIS_URL` unset. Ephemeral / TTL'd; never a source of truth. |
+| Ingestion-side search index (optional, not runtime retrieval) | Azure AI Search | chunk index built during ingestion | `prepdocslib/searchmanager.py`, `servicesetup.py`. Not queried by the chat retriever. |
 | Files / blobs | Azure Blob Storage / ADLS Gen2 | raw PDFs, audio, figures, per-user uploads | `prepdocslib/blobmanager.py`. |
-| Multimodal embedding **producer** (not a store) | Azure OpenAI `text-embedding-3-large` + Azure AI Vision | text + image vectors written into AI Search (and optionally pgvector) | The single embedding producer for both modalities; keeps text and image vectors dimensionally consistent per index. |
+| Embedding **producer** (not a store) | Azure AI Foundry `text-embedding-3-large` (deployed; local `.env` may use `-3-small`) | text vectors written into the retriever's vector store | `core/embeddings_client.py`. |
 
-**Redis responsibilities** (all three enabled): semantic cache keyed by embedding similarity to short-circuit repeat LLM calls; short-term working memory holding the active session's turn context + agent scratchpad (durable history still flushed to Cosmos); and operational app cache (rate-limit counters per `RATE_LIMIT_PER_MIN`, session tokens, feature flags). Everything in Redis carries a TTL.
-
-**pgvector scope**: secondary. It backs relational+vector analytics (the SchemaFlow warehouse and any cross-corpus analytical joins), not the main chat retrieval path. Do not migrate primary RAG retrieval off AI Search without updating this section first.
+**PostgreSQL / pgvector:** aspirational. There is no pgvector code module in the backend and no Postgres in `main.bicep`; do not document it as a live tier.
 
 ---
 
@@ -326,10 +325,9 @@ cd app/backend && uv pip sync requirements.txt && uv run quart --app main:app ru
 # Frontend (port 5173, proxies /api -> :50505)
 cd app/frontend && npm install && npm run dev
 
-# Static site (port 4000)
-cd site && bundle exec jekyll serve
+# Static site: just open site/index.html in a browser (no build server)
 
-# All three
+# Backend + frontend together
 ./app/start.sh
 ```
 
@@ -379,13 +377,14 @@ python scripts/copy_prepdocslib.py
 
 ## 6. Environment variables
 
-Set via `azd env set KEY value`. New ones must be added in all four places:
-1. `infra/main.parameters.json`
-2. `infra/main.bicep` (top-level param + `appEnvVariables`)
-3. `.github/workflows/azure-dev.yml` under `env`
-4. `app/backend/prepdocs.py` and/or `app/backend/app.py:setup_clients()` if consumed by code
+Set via `azd env set KEY value`. New ones that the container needs must be added to:
+1. `infra/main.parameters.json` (if surfaced as a param)
+2. `infra/main.bicep` (top-level param and/or the backend module's `env` array in `infra/app/backend.bicep`)
+3. `app/backend/prepdocs.py` and/or `app/backend/app.py:_setup_clients()` if consumed by code
 
-Key vars:
+(There is no `azure-dev.yml` workflow; deployment is via `azd up` locally.)
+
+Key vars (note: many below belong to optional/off features; the deployed env is defined in `infra/main.bicep`):
 
 | Variable | Purpose |
 |---|---|
@@ -462,8 +461,7 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 - **Redact bodies:** `TRACELOOP_TRACE_CONTENT=false`.
 - **Cost meter:** `core/costmeter.py` tracks per-session input/output tokens; surfaced in `/chat` `cost` SSE event.
 - **Dashboard:** `azd monitor`.
-- **PR CI:** `tests.yml` runs unit + integration + Playwright.
-- **Nightly:** `eval-nightly.yml` runs answer eval + Verifier eval + posts summary issue.
+- **CI:** the only GitHub Actions workflows present are `pages.yml` (portfolio deploy) and `update-claude-md.yml`. There is no test/eval CI workflow yet; run `pytest` and the eval scripts locally.
 
 ---
 
@@ -489,10 +487,10 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 - **GraphRAG community refresh:** updating the graph does NOT auto-refresh community summaries. Call `graphrag/community.py:refresh()`.
 - **Dual vector stores:** Azure AI Search (retrieval) and OpenAI file_search (citations) must stay in sync. `prepdocs.sh` writes to both.
 - **Multimodal model swap:** if changing the chat model, confirm it supports image input (`gpt-4o`, `gpt-4o-mini`, `gpt-4.1-mini`).
-- **GitHub Pages base URL:** `DEMO_URL` is injected at build time by `.github/workflows/pages.yml`. Local Jekyll preview uses a placeholder.
+- **Portfolio site:** `site/index.html` is served as-is by `.github/workflows/pages.yml` (no Jekyll build, no `DEMO_URL` injection). Edit the HTML directly.
 - **iCloud dataless files:** anything under `~/Documents/` may be evicted - copy or `dd` materialize before ingestion.
-- **Redis is ephemeral:** everything in Azure Managed Redis is TTL'd cache / working memory. Cosmos is the durable source of truth for conversations - never reconstruct history from Redis alone.
-- **pgvector is secondary:** primary RAG retrieval stays on Azure AI Search. Use Postgres pgvector only for relational + analytical vector workloads; do not split the chat corpus across both.
+- **Retriever selection:** primary retrieval is chosen by `DOCUMENT_RETRIEVER` (`cosmos` deployed, `redis_notes` local). Do not describe Azure AI Search as the runtime retriever - it is ingestion-side only.
+- **Redis is optional + ephemeral:** `core/semantic_cache.py` no-ops when `REDIS_URL` is unset. Cosmos NoSQL is the durable source of truth for conversations.
 - **No em dashes anywhere.** Use single hyphen `-` only.
 - **No end-of-turn recaps in chat-app responses** (user preference applies to dev workflow only, not application code).
 
@@ -500,10 +498,10 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 
 ## 11. Dependencies
 
-- Python pins: `app/backend/requirements.txt` (compiled by `uv pip compile`).
+- Python deps: `app/backend/requirements.in` is the real dependency list. `requirements.txt` currently just does `-r requirements.in` (not yet a compiled pin set); the Dockerfile installs from `requirements.in`.
 - Node pins: `app/frontend/package-lock.json`. `.npmrc` has `legacy-peer-deps=true`.
-- Bicep modules: `infra/core/` (one folder per resource family).
-- Jekyll: `site/Gemfile`, `site/_config.yml`.
+- Bicep modules: `infra/core/` (one folder per resource family; not all are wired into `main.bicep`).
+- Portfolio site: plain `site/index.html` (no Gemfile / Jekyll).
 
 Upgrade backend:
 ```bash
@@ -532,25 +530,28 @@ cd ../.. && pytest tests/e2e/e2e.py
 
 ## 13. Integration matrix
 
-| Service | What for | Where wired |
-|---|---|---|
-| Azure OpenAI | chat, embed, vision, reasoning | `prepdocs.py:setup_openai_client`, `agents/*` |
-| Azure AI Search | hybrid retrieval, knowledge agent | `prepdocslib/searchmanager.py`, `approaches/chatreadretrieveread.py` |
-| Azure Document Intelligence | PDF layout/OCR | `prepdocslib/pdfparser.py` |
-| Azure Speech-to-Text | audio -> text + diarization | `voice/speech_client.py`, `app/functions/audio_transcriber` |
-| Azure AI Vision | image embeddings | `prepdocslib/embeddings.py:ImageEmbeddings` |
-| Azure AI Content Safety | runtime prompt/completion filtering | `safety/content_safety.py` |
-| Azure AI Language | PII redaction at ingestion | `safety/pii.py` |
-| Cosmos Gremlin | live knowledge graph | `graphrag/cosmos_gremlin.py` |
-| Cosmos NoSQL | JSON docs + chat history | `chat_history/cosmosdb.py` |
-| Azure Managed Redis | semantic cache + short-term memory + app cache/rate-limit | `core/cache.py` (planned), `core/sessionhelper.py` |
-| PostgreSQL (pgvector + azure_ai) | secondary relational + vector analytics | `core/pgvector.py` (planned), `approaches/sql_schemaflow_approach.py` |
-| Blob / ADLS Gen2 | raw + processed + user uploads | `prepdocslib/blobmanager.py` |
-| AI Foundry Project | adversarial sim, hosted agents | `evals/safety_evaluation.py`, `agents/foundry_client.py` |
-| OpenAI Responses file_search | citations | `agents/tools.py:file_search` |
-| LangSmith | tool-call tracing | `tracing/langsmith.py` |
-| Application Insights | OTel sink | `tracing/otel.py` |
-| GitHub Pages | portfolio host | `.github/workflows/pages.yml` |
+Legend: **[D]** wired in the deployment, **[O]** optional/code-only (off or stubbed in the deploy).
+
+| Service | What for | Status | Where wired |
+|---|---|---|---|
+| Azure AI Foundry (project + account) | chat/Responses + embeddings | [D] | `core/aoai_client.py`, `core/embeddings_client.py`, `agents/*` |
+| Cosmos NoSQL vector store | primary retrieval (deployed) | [D] | `core/cosmos_vector_retriever.py` |
+| Cosmos NoSQL | chat history | [D] | `chat_history/cosmosdb.py` |
+| Blob / ADLS Gen2 | raw + processed + user uploads | [D] | `prepdocslib/blobmanager.py` |
+| Application Insights | OTel sink | [D] | `tracing/otel.py` |
+| Key Vault | secrets | [D] | RBAC in `infra/app/rbac.bicep` |
+| OpenAI Responses file_search | citations | [O] | `agents/tools.py:file_search` (stubs if no vector store id) |
+| Cosmos Gremlin + GraphRAG | knowledge graph | [O] | `graphrag/cosmos_gremlin.py`, `agents/tools.py:graph_search` |
+| Azure AI Search | ingestion-side index (not runtime retrieval) | [O] | `prepdocslib/searchmanager.py` |
+| Azure Document Intelligence | PDF layout/OCR | [O] | `prepdocslib/pdfparser.py` |
+| Azure Speech / Voice Live | audio -> text + diarization | [O] | `voice/speech_client.py`, `voice/voice_live.py` |
+| Azure AI Content Safety | runtime prompt/completion filtering | [O] | `safety/content_safety.py` |
+| Azure AI Language | PII redaction at ingestion | [O] | `safety/pii.py` |
+| Redis | semantic + embedding cache | [O] | `core/semantic_cache.py` (no-op without `REDIS_URL`) |
+| LangSmith | tracing | [O] | `tracing/langsmith.py` |
+| GitHub Pages | portfolio host | [D] | `.github/workflows/pages.yml` |
+
+PostgreSQL / pgvector and Azure Managed Redis as a managed tier are aspirational - no backend module and not in `main.bicep`.
 
 ---
 
