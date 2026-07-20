@@ -319,6 +319,10 @@ python scripts/seed_graph.py
 
 ### Local dev
 ```bash
+# Fastest: backend + frontend + redis in Docker
+docker-compose up
+
+# Manual setup (no Docker)
 # Backend (port 50505)
 cd app/backend && uv pip sync requirements.txt && uv run quart --app main:app run --port 50505
 
@@ -327,7 +331,7 @@ cd app/frontend && npm install && npm run dev
 
 # Static site: just open site/index.html in a browser (no build server)
 
-# Backend + frontend together
+# Backend + frontend (without Docker)
 ./app/start.sh
 ```
 
@@ -425,7 +429,49 @@ Key vars (note: many below belong to optional/off features; the deployed env is 
 
 ---
 
-## 7. Adding things (recipes)
+## 7. Docker and Deployment
+
+### Local dev with Docker
+```bash
+docker-compose up
+# Backend at http://localhost:50505
+# Frontend at http://localhost:5173
+# Redis at localhost:6379 (optional cache)
+```
+
+This spins up:
+- `backend` service (Python 3.11, Quart, port 50505) with hot-reload mounts
+- `frontend` service (Node 20, Vite dev server, port 5173)
+- `redis` service (ephemeral, port 6379)
+
+Set `VITE_API_URL=http://localhost:50505` in frontend; backend defaults to Redis (no Azure needed).
+
+### Production Docker image
+```bash
+docker build -t mmrag:latest .
+docker run -p 50505:50505 -e PORT=50505 mmrag:latest
+```
+
+Multi-stage build:
+1. Frontend stage (Node 20): builds React 19 + Vite -> `/frontend/build`
+2. Backend stage (Python 3.11): copies frontend build to `/app/static`, runs Gunicorn
+
+### Azure deployment
+```bash
+azd env new <env-name>
+azd up
+```
+
+Deploys backend to Container Apps + backend Docker image to ACR. Frontend is served from backend's `/app/static` (no separate frontend deployment). See `infra/main.bicep` and `infra/app/backend.bicep`.
+
+### GitHub Pages deployment
+- Static portfolio: `site/index.html` -> `.github/workflows/pages.yml` -> https://github.com/pages
+- No backend on GitHub Pages (GitHub Pages hosts static sites only)
+- Full app lives at deployed Azure Container Apps endpoint
+
+---
+
+## 8. Adding things (recipes)
 
 ### Add an approach / agent
 
@@ -454,18 +500,23 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 
 ---
 
-## 8. Tracing, monitoring, evals
+## 9. Tracing, monitoring, evals
 
 - **OTel:** `tracing/otel.py` -> Azure Monitor. View in App Insights `Investigate > Performance` and `Failures`.
 - **LangSmith:** `tracing/langsmith.py` -> `@traceable` decorator wraps every agent + tool. Project name comes from `LANGSMITH_PROJECT`.
 - **Redact bodies:** `TRACELOOP_TRACE_CONTENT=false`.
 - **Cost meter:** `core/costmeter.py` tracks per-session input/output tokens; surfaced in `/chat` `cost` SSE event.
 - **Dashboard:** `azd monitor`.
-- **CI:** the only GitHub Actions workflows present are `pages.yml` (portfolio deploy) and `update-claude-md.yml`. There is no test/eval CI workflow yet; run `pytest` and the eval scripts locally.
+- **CI / CD:** 
+  - `pages.yml` - deploys static portfolio site to GitHub Pages whenever `site/` changes
+  - `update-claude-md.yml` - auto-syncs CLAUDE.md with codebase on push/schedule
+  - `self-document.yml` - runs self-documenting agent to update STATUS.md and ADRs
+  - Backend deployment: manual `azd up` to Azure Container Apps (no automated CI yet)
+  - Frontend: included in backend Docker image; docker-compose for local dev includes both services
 
 ---
 
-## 9. Auth + ACLs + safety
+## 10. Auth + ACLs + safety
 
 - Optional Entra ID login (MSAL). Enable: `azd env set AZURE_USE_AUTHENTICATION true`.
 - Per-document ACLs via `scripts/manageacl.py` and `decorators.py:@authenticated_path`.
@@ -477,7 +528,7 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 
 ---
 
-## 10. Gotchas
+## 11. Gotchas
 
 - **Knowledge Agent preview SDK:** pin `azure-search-documents` with the preview wheel that includes `knowledgebases`.
 - **Function bundles:** every `prepdocslib/` change requires `python scripts/copy_prepdocslib.py` or function deploys ship stale code.
@@ -496,7 +547,7 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 
 ---
 
-## 11. Dependencies
+## 12. Dependencies
 
 - Python deps: `app/backend/requirements.in` is the real dependency list. `requirements.txt` currently just does `-r requirements.in` (not yet a compiled pin set); the Dockerfile installs from `requirements.in`.
 - Node pins: `app/frontend/package-lock.json`. `.npmrc` has `legacy-peer-deps=true`.
@@ -517,7 +568,7 @@ cd ../.. && pytest tests/e2e/e2e.py
 
 ---
 
-## 12. Coding conventions
+## 13. Coding conventions
 
 - Backend: 4-space indent, type hints required, async-first, `logging.getLogger(__name__)`, no bare `Exception`.
 - Frontend: Prettier + ESLint, functional components, co-located `.module.css`.
@@ -528,7 +579,7 @@ cd ../.. && pytest tests/e2e/e2e.py
 
 ---
 
-## 13. Integration matrix
+## 14. Integration matrix
 
 Legend: **[D]** wired in the deployment, **[O]** optional/code-only (off or stubbed in the deploy).
 
@@ -555,7 +606,7 @@ PostgreSQL / pgvector and Azure Managed Redis as a managed tier are aspirational
 
 ---
 
-## 14. Self-update prompt
+## 15. Self-update prompt
 
 When asked "update CLAUDE.md to reflect the current codebase":
 

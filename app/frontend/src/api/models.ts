@@ -46,6 +46,19 @@ export interface ChatResponse {
     session_state?: string | null;
 }
 
+export interface DryRunStatement {
+    layer: string;
+    statement: string;
+    ok: boolean;
+    error?: string;
+    skipped?: boolean;
+}
+
+export interface DryRunResult {
+    ok: boolean;
+    per_statement: DryRunStatement[];
+}
+
 export interface SqlBundle {
     request: string;
     parsed: Record<string, unknown>;
@@ -53,6 +66,7 @@ export interface SqlBundle {
     plan: Record<string, unknown>;
     sql: Record<string, unknown>;
     validation: { ok: boolean; issues: string[] };
+    dry_run?: DryRunResult;
 }
 
 export interface AppConfig {

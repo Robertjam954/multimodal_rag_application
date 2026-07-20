@@ -1,0 +1,16 @@
+# Frontend dev stage with hot reload
+FROM node:20-slim AS dev
+
+WORKDIR /app
+
+ENV VITE_API_URL=http://localhost:50505
+
+COPY app/frontend/package.json app/frontend/package-lock.json ./
+
+RUN npm ci --legacy-peer-deps
+
+COPY app/frontend/ ./
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

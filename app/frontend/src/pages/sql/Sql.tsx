@@ -5,7 +5,7 @@ import type { SqlBundle } from "../../api/models";
 import SchemaFlowPanel from "../../components/SchemaFlowPanel/SchemaFlowPanel";
 
 const SAMPLE =
-    "Add LOYALTY_TIER VARCHAR(20) to ODS.ODS_CUSTOMER_PROFILE as nullable. Backfill from CORE.DIM_CUSTOMER.LOYALTY_TIER. Propagate to staging, core, mart.";
+    "Add MUTATION_STATUS VARCHAR(50) to the mutation fact table indicating pathogenic classification (benign, likely_benign, variant_of_uncertain_significance, likely_pathogenic, pathogenic). Backfill from clinical records. Propagate through staging, core, and mart layers.";
 
 export default function Sql() {
     const [req, setReq] = useState(SAMPLE);
