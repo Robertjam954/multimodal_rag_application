@@ -190,6 +190,12 @@ azd up            # provisions compute + deploys the backend container
 
 ### Quick start (local dev)
 ```bash
+# Option 1: Docker Compose (requires Docker)
+docker-compose up
+# Backend at http://localhost:50505
+# Frontend at http://localhost:5173
+
+# Option 2: Manual (requires Python 3.11 + Node 20)
 ./app/start.sh    # boots the Quart backend on :50505 and the Vite frontend on :5173
 ```
 
