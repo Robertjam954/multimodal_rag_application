@@ -43,6 +43,13 @@ The product surfaces four demonstrations:
   page or audio timestamp, so every claim can be inspected at its source.
 - **GraphRAG retrieval.** A live knowledge graph (Cosmos Gremlin) with community summaries
   supports multi-hop and global questions alongside vector search.
+- **Broad ingestion sources.** Beyond PDFs and audio, the pipeline ingests YouTube
+  transcripts, Microsoft Learn pages (from a URL list), and local Obsidian vault notes
+  (`prepdocs.py --source files|learn|obsidian`), all landing in the same vector store
+  with source-typed chunks and deep links.
+- **AI tutor chat (Chainlit).** An alternate Chainlit UI (`chainlit_app.py`) wires a
+  tutor agent with notes search and cross-session conversation memory over the same
+  retriever, aimed at studying the ingested material.
 - **SchemaFlow SQL planner.** A separate Parse -> Impact -> Plan -> SQL multi-agent flow
   takes a natural-language change request against a sample clinical warehouse and produces a
   typed plan and SQL, demonstrating schema-aware SQL literacy.

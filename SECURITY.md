@@ -10,7 +10,9 @@ Email security reports to robertjam954@gmail.com. Do not file public issues for 
   The Container App runs under a system-assigned managed identity; data-plane access is
   granted via Azure RBAC role assignments in `infra/app/rbac.bicep` (Cognitive Services
   OpenAI User, Azure AI User, Cosmos DB Built-in Data Contributor, Storage Blob Data
-  Contributor, Key Vault Secrets User, AcrPull). There are no API keys in the deployed
+  Contributor, Key Vault Secrets User, AcrPull; plus Search Service Contributor and
+  Search Index Data Contributor when `useAzureSearch=true` - the Search service is
+  keyless-only, `disableLocalAuth: true`). There are no API keys in the deployed
   configuration.
 - In code, credentials come from `DefaultAzureCredential` / `ManagedIdentityCredential`
   (production) or `AzureDeveloperCliCredential` (local). No secrets are hardcoded in the
