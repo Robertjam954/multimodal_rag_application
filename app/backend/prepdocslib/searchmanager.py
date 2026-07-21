@@ -44,14 +44,28 @@ class SearchManager:
         except Exception:
             logger.exception("ensure_index failed; continuing")
 
+    @staticmethod
+    def _parent_id(chunk_id: str) -> str:
+        """Group chunks of one source document.
+
+        Ids look like `file-<md5>-page-<n>-<ci>` (prepdocs) or
+        `upload-<oid>-<hex8>-<ci>` (user uploads); the parent is the id minus
+        the page/chunk suffix.
+        """
+        if "-page-" in chunk_id:
+            return chunk_id.split("-page-", 1)[0]
+        return chunk_id.rsplit("-", 1)[0] if "-" in chunk_id else chunk_id
+
     async def upsert(self, chunks: list[Chunk]) -> None:
         client = self._search_client()
         if not client:
             logger.info("Search upsert skipped (no service); %d chunks", len(chunks))
             return
-        docs = [
-            {
+        docs = []
+        for c in chunks:
+            doc: dict[str, Any] = {
                 "id": c.id,
+                "parent_id": self._parent_id(c.id),
                 "content": c.content,
                 "category": c.category,
                 "source_type": c.source_type,
@@ -60,10 +74,18 @@ class SearchManager:
                 "storageUrl": c.storage_url,
                 "embedding": c.embedding or [],
                 "acls": c.acls,
-                "images": c.images,
             }
-            for c in chunks
-        ]
+            if c.images:
+                # Vector fields can't live inside complex collections; the first
+                # image embedding is promoted to the top-level `image_vector`.
+                doc["images"] = [
+                    {"url": im.get("url", ""), "description": im.get("description", "")}
+                    for im in c.images
+                ]
+                first_emb = next((im.get("embedding") for im in c.images if im.get("embedding")), None)
+                if first_emb:
+                    doc["image_vector"] = first_emb
+            docs.append(doc)
         await client.upload_documents(documents=docs)
 
     async def remove_all(self) -> None:
