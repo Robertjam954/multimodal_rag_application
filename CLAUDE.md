@@ -12,11 +12,12 @@ The architecture borrows patterns from [Azure-Samples/azure-search-openai-demo](
 
 > **DEPLOYED REALITY (read first).** The code implements far more than the current deployment turns on. `infra/main.bicep` is a Stage-1 deploy against the pre-existing `ai-tutor` resource group (region eastus2). It creates only Log Analytics, Application Insights, ACR, a Container Apps environment, the backend Container App, and Entra ID role assignments; it references (does not recreate) the existing Foundry account/project (`ai-tutor-foundry` / `ai-tutor-ms-azure-proj`), Cosmos account (`cosmosdbaitutor7a79c7`), Blob storage (`azureblobstorageai`), and Key Vault (`ai-tutor`). Deployed facts:
 > - **Chat/Responses + embeddings** go to the Azure AI Foundry project/account endpoints; there is no standalone Azure OpenAI resource.
-> - **Retrieval is `DOCUMENT_RETRIEVER=cosmos`** - a Cosmos DB NoSQL vector store (`core/cosmos_vector_retriever.py`, db `rag` / container `documents`). Local dev defaults to `redis_notes`. **Azure AI Search is NOT the runtime retriever** (it lives only in the ingestion-side `prepdocslib/searchmanager.py`).
-> - **Keyless / Entra ID only.** System-assigned managed identity + RBAC in `infra/app/rbac.bicep`. No API keys deployed.
-> - **Flags on in the deploy:** `USE_VERIFIER`, `USE_VECTOR_SEARCH`, `USE_CHAT_HISTORY_COSMOS`, feedback. **Off:** `USE_GRAPHRAG`, `USE_MULTIMODAL`, `USE_VOICE_DEMO`, `USE_SQL_DEMO`, `USE_CONTENT_SAFETY`, `USE_PII_REDACTION`. `graph_search` / `file_search` fall back to stubs when unconfigured.
-> - **Not deployed:** Azure AI Search, Speech, Vision, Content Safety, Document Intelligence, Cosmos Gremlin, Azure Managed Redis, and PostgreSQL. Bicep modules exist under `infra/core/` for several of these but are not composed into `main.bicep`. Redis is used only as an optional local cache (no-op when `REDIS_URL` unset); PostgreSQL/pgvector is aspirational (no code module). The `app/functions/` cloud-ingestion service is deferred (not in `azure.yaml`).
-> - **The `docs/*.md` files referenced throughout this repo do not exist** (only `docs/hierarchical_agent_teams_template.ipynb` and `docs/images/`). Treat links to `docs/*.md` as TODOs, not sources.
+> - **Retrieval is `DOCUMENT_RETRIEVER=cosmos`** - a Cosmos DB NoSQL vector store (`core/cosmos_vector_retriever.py`, db `rag` / container `documents`). Local dev defaults to `redis_notes`. A third backend, `azure_search` (`core/azure_search_retriever.py`, hybrid BM25+vector with optional semantic rerank), is code-complete, and the Search service is now composed into `infra/main.bicep` behind `useAzureSearch` (default `false` - no billable service until flipped, avoids the ~$75+/mo cost). `DOCUMENT_RETRIEVER` is a bicep param (default `cosmos`).
+> - **Keyless / Entra ID only.** System-assigned managed identity + RBAC in `infra/app/rbac.bicep` (includes Search roles for when `useAzureSearch` is flipped). No API keys deployed.
+> - **Flags on in the deploy:** `USE_VERIFIER`, `USE_VECTOR_SEARCH`, `USE_CHAT_HISTORY_COSMOS`, feedback. **Off:** `USE_GRAPHRAG`, `USE_MULTIMODAL`, `USE_VOICE_DEMO`, `USE_SQL_DEMO`, `USE_CONTENT_SAFETY`, `USE_PII_REDACTION`. `graph_search` / `file_search` fall back to stubs when unconfigured. Chat deployment param defaults to `gpt-4o-mini` in `main.bicep` (code fallback `gpt-4.1-mini` in `core/aoai_client.py`).
+> - **Not deployed:** Azure AI Search (provisionable but gated off), Speech, Vision, Content Safety, Document Intelligence, Cosmos Gremlin, Azure Managed Redis, and PostgreSQL. Bicep modules exist under `infra/core/` for several of these but only monitor/ACR/Container Apps/Search are composed into `main.bicep`. Redis is used only as an optional local cache (no-op when `REDIS_URL` unset); PostgreSQL/pgvector is aspirational (no code module). The `app/functions/` cloud-ingestion service is deferred (not in `azure.yaml`).
+> - **Active direction (per `STATUS.md`, 2026-07):** local Obsidian-vault RAG with local models via Ollama (`MODE=local`). `prepdocslib/obsidianstrategy.py` (vault ingestion) is done; a dedicated `obsidian` retriever and Ollama embedding routing are still open items.
+> - **The `docs/*.md` files referenced throughout this repo do not exist** (only `docs/adr/` ADRs, `docs/hierarchical_agent_teams_template.ipynb`, and `docs/images/`). Treat links to `docs/*.md` as TODOs, not sources. Living root docs that DO exist: `README.md`, `ARCHITECTURE.md`, `PRODUCT.md`, `STATUS.md` (live checklist), `AGENTS.md` (pointer here), `CONTRIBUTING.md`, `SECURITY.md`.
 
 ### Primary capabilities
 
@@ -34,8 +35,8 @@ The architecture borrows patterns from [Azure-Samples/azure-search-openai-demo](
 ## 2. Tech Stack
 
 ### Backend (`app/backend/`)
-- **Framework:** Quart 0.19+ (async Flask-compatible) behind Gunicorn with a uvloop worker (`custom_uvicorn_worker.py`).
-- **Python:** 3.11 (pinned in `pyproject.toml`).
+- **Framework:** Quart 0.19+ (async Flask-compatible) behind Gunicorn with a uvloop worker (`custom_uvicorn_worker.py`). A Chainlit chat UI (`chainlit_app.py`, tutor agent + notes search + conversation memory) exists as an alternate frontend: `cd app/backend && chainlit run chainlit_app.py --port 8000`.
+- **Python:** `>=3.11,<3.13` (`pyproject.toml`).
 - **Dependency manager:** `uv` (`uv pip compile requirements.in -o requirements.txt`).
 - **Azure SDKs:** `azure-identity`, `azure-search-documents` (knowledgebases preview), `azure-ai-documentintelligence`, `azure-cognitiveservices-speech`, `azure-storage-blob`, `azure-cosmos`, `azure-monitor-opentelemetry`, `azure-ai-contentsafety`, `azure-ai-language` (PII redaction).
 - **OpenAI / Foundry:** `openai >= 1.50` (Responses API for `file_search`), `AzureOpenAI` for hosted deployments. Reasoning models (o-series) supported via `reasoning_effort` overrides.
@@ -57,7 +58,7 @@ The architecture borrows patterns from [Azure-Samples/azure-search-openai-demo](
 - **Build:** Vite -> `app/frontend/build/`, served as static by Quart in production.
 
 ### Static portfolio (`site/`)
-- **Framework:** none - a single self-contained static `site/index.html` (inline CSS, Google Fonts). `_layouts/` and `_includes/` folders exist but `_posts/` is empty and there is no `_config.yml` or `Gemfile` (not a Jekyll build).
+- **Framework:** none - a single self-contained static `site/index.html` (inline CSS, Google Fonts) plus `.nojekyll`. No `_config.yml` or `Gemfile` (not a Jekyll build; the root `npm run site:serve` script is stale).
 - **Deployed:** GitHub Pages via `.github/workflows/pages.yml`, which uploads `site/` as-is with `.nojekyll` (no Jekyll build step).
 
 ### Infra (`infra/`)
@@ -72,7 +73,7 @@ The architecture borrows patterns from [Azure-Samples/azure-search-openai-demo](
   - `text_processor/` - chunk + embed + Search index push.
   - `audio_transcriber/` - Speech-to-Text -> utterance JSON.
   - `graph_indexer/` - emits entities/edges to Cosmos Gremlin + GraphRAG community refresh.
-- Each function bundles a synchronized copy of `prepdocslib` (refresh with `python scripts/copy_prepdocslib.py`).
+- `python scripts/copy_prepdocslib.py` syncs `prepdocslib` into each function bundle before deploy (copies are not committed; run it after any `prepdocslib` change).
 
 ### Tests (`tests/`)
 - `pytest` + `pytest-asyncio`.
@@ -91,103 +92,122 @@ The architecture borrows patterns from [Azure-Samples/azure-search-openai-demo](
 
 ```
 multimodal_rag_application/
-├── CLAUDE.md README.md AGENTS.md CONTRIBUTING.md SECURITY.md LICENSE
-├── azure.yaml                              # azd config
+├── CLAUDE.md README.md AGENTS.md ARCHITECTURE.md PRODUCT.md STATUS.md
+├── CONTRIBUTING.md SECURITY.md LICENSE
+├── azure.yaml                              # azd config (backend only; functions deferred)
 ├── pyproject.toml requirements-dev.txt
-├── package.json                            # root convenience scripts
-├── .pre-commit-config.yaml .markdownlint-cli2.jsonc ps-rule.yaml
+├── package.json                            # root convenience scripts (dev/test/ingest)
+├── .pre-commit-config.yaml .markdownlint-cli2.jsonc
 ├── locustfile.py
+├── context-engineering-workflow.md
+├── claude-md-memory-workflow/ self-documenting-ai-agent/   # workflow reference docs
+├── .claude/
+│   ├── agents/self-documenter.md           # docs-sync subagent
+│   ├── adr-template.md
+│   └── skills/                             # local cache of Azure skills (many)
+├── .chainlit/                              # Chainlit config + translations
 │
 ├── site/                                   # static portfolio (no Jekyll build)
-│   ├── index.html                          # self-contained page
-│   ├── .nojekyll
-│   ├── _layouts/ _includes/ _posts/ (empty)
-│   └── assets/
+│   ├── index.html .nojekyll
 │
 ├── app/
-│   ├── start.sh start.ps1
+│   ├── start.sh
 │   ├── backend/
 │   │   ├── Dockerfile gunicorn.conf.py custom_uvicorn_worker.py
 │   │   ├── app.py main.py config.py decorators.py error.py
+│   │   ├── chainlit_app.py chainlit.md     # Chainlit tutor UI (alternate frontend)
+│   │   ├── youtube_service.py              # URL<->id helpers + optional Data API metadata
 │   │   ├── load_azd_env.py
 │   │   ├── prepdocs.py setup_cloud_ingestion.py
 │   │   ├── requirements.in requirements.txt
 │   │   ├── approaches/
-│   │   │   ├── approach.py
+│   │   │   ├── approach.py _agentic_preamble.py
 │   │   │   ├── chatreadretrieveread.py
 │   │   │   ├── multiagent_approach.py
+│   │   │   ├── hierarchical_multiagent_approach.py   # opt-in USE_HIERARCHICAL_AGENTS
 │   │   │   ├── sql_schemaflow_approach.py
 │   │   │   ├── promptmanager.py
 │   │   │   └── prompts/
 │   │   │       ├── chat_answer.system.jinja2 chat_answer.user.jinja2
-│   │   │       ├── query_rewrite.system.jinja2 chat_query_rewrite_tools.json
-│   │   │       ├── router.system.jinja2
+│   │   │       ├── query_rewrite.system.jinja2 query_enhancement.system.jinja2
+│   │   │       ├── chat_query_rewrite_tools.json
+│   │   │       ├── router.system.jinja2 tutor.system.jinja2
 │   │   │       ├── verifier.system.jinja2 verifier.user.jinja2
 │   │   │       ├── followups.system.jinja2
 │   │   │       └── sql/{parse,impact,plan,sql}.system.jinja2
 │   │   ├── agents/
-│   │   │   ├── router.py retriever.py answerer.py verifier.py
+│   │   │   ├── router.py retriever.py answerer.py verifier.py followups.py
 │   │   │   ├── sql_schemaflow.py
 │   │   │   ├── tools.py graph.py
+│   │   │   ├── hierarchical_graph.py skills.py _chat_model.py   # hierarchical teams
+│   │   │   ├── tutor_agent.py notes_search_tool.py              # Chainlit tutor path
+│   │   │   ├── _llm.py                     # env-routed LLM client (Azure/OpenAI/Ollama)
+│   │   │   ├── run_eval.py eval_questions.jsonl                 # Foundry evaluators
 │   │   │   └── foundry_client.py
 │   │   ├── graphrag/
 │   │   │   ├── indexer.py retriever.py cosmos_gremlin.py community.py entity_extractor.py
 │   │   ├── prepdocslib/
 │   │   │   ├── blobmanager.py pdfparser.py htmlparser.py csvparser.py jsonparser.py textparser.py
+│   │   │   ├── youtubeparser.py learndocparser.py
 │   │   │   ├── figureprocessor.py mediadescriber.py
 │   │   │   ├── textsplitter.py embeddings.py
-│   │   │   ├── searchmanager.py
+│   │   │   ├── searchmanager.py cosmoswriter.py
 │   │   │   ├── filestrategy.py integratedvectorizerstrategy.py cloudingestionstrategy.py
+│   │   │   ├── learnstrategy.py obsidianstrategy.py
 │   │   │   ├── listfilestrategy.py page.py parser.py strategy.py servicesetup.py
 │   │   ├── voice/
 │   │   │   ├── speech_client.py diarizer.py audio_uploader.py
+│   │   │   ├── voice_live.py transcript_cleaner.py
 │   │   ├── safety/
 │   │   │   ├── content_safety.py pii.py
 │   │   ├── tracing/
 │   │   │   ├── otel.py langsmith.py
 │   │   ├── core/
+│   │   │   ├── aoai_client.py embeddings_client.py
+│   │   │   ├── document_retriever.py cosmos_vector_retriever.py azure_search_retriever.py
+│   │   │   ├── conversation_memory.py semantic_cache.py resilience.py
 │   │   │   ├── authentication.py sessionhelper.py modelhelper.py costmeter.py
 │   │   ├── chat_history/
 │   │   │   ├── cosmosdb.py browser.py
 │   ├── frontend/
 │   │   ├── package.json vite.config.ts tsconfig.json .npmrc .prettierrc.json index.html
 │   │   ├── src/
-│   │   │   ├── main.tsx App.tsx router.tsx theme.ts
+│   │   │   ├── main.tsx App.tsx theme.ts index.css   # routing lives in App.tsx (react-router-dom)
 │   │   │   ├── api/{api.ts, models.ts, stream.ts}
 │   │   │   ├── components/
 │   │   │   │   ├── Answer/ Citations/ ThoughtProcess/ SupportingContent/
 │   │   │   │   ├── VerifierBadge/ FollowUps/ Settings/ Feedback/
 │   │   │   │   ├── GraphView/ PDFViewer/ VoiceRecorder/ SchemaFlowPanel/
 │   │   │   ├── pages/{chat,papers,voice,sql,portfolio}/
-│   │   │   ├── lib/{cost.ts, theme.ts, deepLink.ts}
+│   │   │   ├── lib/{cost.ts, deepLink.ts}
 │   │   │   └── locales/en/translation.json
-│   │   └── public/
 │   └── functions/
 │       ├── document_extractor/ figure_processor/ text_processor/ audio_transcriber/ graph_indexer/
+│       ├── host.json requirements.txt
+│       └── (scripts/copy_prepdocslib.py syncs prepdocslib into each bundle at deploy
+│            time; the copies are not committed and are absent right now)
 │
 ├── infra/
-│   ├── main.bicep main.parameters.json main.test.bicep
-│   ├── backend-dashboard.bicep network-isolation.bicep private-endpoints.bicep
+│   ├── main.bicep main.parameters.json abbreviations.json
 │   ├── core/
-│   │   ├── ai/{openai,documentintelligence,speech,vision,contentsafety,foundryhub,foundryproject}.bicep
-│   │   ├── search/search-services.bicep
+│   │   ├── ai/{openai,documentintelligence,speech,vision,contentsafety}.bicep
+│   │   ├── search/search-services.bicep    # composed into main.bicep behind useAzureSearch
 │   │   ├── storage/storage-account.bicep
 │   │   ├── cosmos/{cosmos-sql,cosmos-gremlin}.bicep
-│   │   ├── host/{container-app,container-apps-environment,functions-app}.bicep
-│   │   ├── monitor/{applicationinsights,log-analytics,dashboard}.bicep
-│   │   └── security/{keyvault,role,identity}.bicep
-│   └── app/{backend,functions}.bicep
+│   │   ├── host/{container-registry,container-apps-environment}.bicep
+│   │   ├── monitor/{applicationinsights,log-analytics}.bicep
+│   │   └── security/keyvault.bicep
+│   └── app/{backend,functions,rbac}.bicep
 │
 ├── scripts/
 │   ├── prepdocs.sh prepdocs.ps1
 │   ├── copy_prepdocslib.py
-│   ├── setup_cloud_ingestion.{sh,ps1,py}
-│   ├── auth_init.{sh,ps1,py} auth_update.{sh,ps1,py} auth_common.py
-│   ├── roles.{sh,ps1}
-│   ├── load_azd_env.py load_python_env.{sh,ps1}
+│   ├── fetch_learn.py                      # fetch Microsoft Learn pages into data/learn/fetched/
+│   ├── setup_cloud_ingestion.sh
+│   ├── auth_init.sh roles.sh
+│   ├── load_azd_env.py
 │   ├── manageacl.py sampleacls.json
-│   ├── seed_graph.py
-│   └── cost_alerts.bicep
+│   └── seed_graph.py
 │
 ├── evals/
 │   ├── requirements.txt evaluate_config.json evaluate_config_multimodal.json
@@ -199,20 +219,17 @@ multimodal_rag_application/
 ├── tests/
 │   ├── conftest.py
 │   ├── test_app.py test_approaches.py test_verifier.py test_graphrag.py test_voice.py
-│   ├── test_prepdocslib_textsplitter.py test_prepdocslib_pdfparser.py
+│   ├── test_prepdocslib_textsplitter.py
 │   └── e2e/e2e.py
 │
 ├── docs/
-│   ├── architecture.md data_ingestion.md graphrag.md verifier.md
-│   ├── voice.md multimodal.md agentic_retrieval.md sql_schemaflow.md
-│   ├── citations.md tracing.md monitoring.md
-│   ├── evaluation.md safety_evaluation.md
-│   ├── productionizing.md localdev.md
+│   ├── adr/                                # architecture decision records
+│   ├── hierarchical_agent_teams_template.ipynb
 │   └── images/
 │
-├── data/{papers,audio,graphs}/
-├── .devcontainer/{devcontainer.json,Dockerfile,docker-compose.yml,post-create.sh}
-└── .github/workflows/{pages,update-claude-md}.yml   # (only these exist; no azure-dev/tests/eval workflows yet)
+├── data/{papers,audio,graphs,learn}/       # learn/ holds fetched MS Learn pages + seed URL lists
+└── .github/workflows/{pages,update-claude-md}.yml + claude-md-review-prompt.md
+                                            # (only these exist; no azure-dev/tests/eval workflows yet)
 ```
 
 ---
@@ -264,9 +281,9 @@ Quart backend (Container Apps)
 - A second SSE channel carries the Verifier verdict once each sentence completes.
 - The UI renders unverified sentences greyed out; verified ones become normal text; rejected ones are visually struck and replaced with the verdict reason.
 
-### Ingestion flow (PDFs)
+### Ingestion flow (PDFs and other sources)
 
-`scripts/prepdocs.sh` -> `prepdocs.py` -> `prepdocslib` pipeline:
+`scripts/prepdocs.sh` -> `prepdocs.py` -> `prepdocslib` pipeline. `prepdocs.py --source` selects the strategy: `files` (default, `data/papers/`), `learn` (`learnstrategy.py`, fetches a Microsoft Learn URL list, default `data/learn/azure_ai_seed.txt`), or `obsidian` (`obsidianstrategy.py`, walks a local vault via `--vault`/`OBSIDIAN_VAULT_PATH`, tags chunks `source_type='note'` with obsidian:// deep links). A YouTube parser (`prepdocslib/youtubeparser.py` + `youtube_service.py`) ingests transcripts via `youtube://<video_id>` filenames. The classic file pipeline:
 1. List files (local FS or ADLS Gen2 user paths).
 2. PII redaction (`safety/pii.py`) before any text leaves the trust boundary.
 3. Document extraction (DocIntel default; PyPDF fallback).
@@ -286,7 +303,7 @@ Quart backend (Container Apps)
 
 ### Data and storage tier (canonical database choices)
 
-Authoritative mapping of which datastore owns what. The retrieval backend is pluggable via `DOCUMENT_RETRIEVER` (`core/document_retriever.py`). For **this** app the deployed retriever is **Cosmos DB NoSQL vector store**; local dev defaults to a Redis-backed notes store. Azure AI Search is NOT a runtime retrieval backend here.
+Authoritative mapping of which datastore owns what. The retrieval backend is pluggable via `DOCUMENT_RETRIEVER` (`core/document_retriever.py`); three backends are registered: `cosmos` (deployed), `redis_notes` (local dev default), and `azure_search` (code-complete, service gated off in infra behind `useAzureSearch=false`).
 
 | Concern | Store / service | What it owns | Notes |
 |---|---|---|---|
@@ -296,7 +313,7 @@ Authoritative mapping of which datastore owns what. The retrieval backend is plu
 | **Conversation history** | **Azure Cosmos DB for NoSQL** | chat sessions/messages | `chat_history/cosmosdb.py` (db `chat`, container `history`); registered only when `USE_CHAT_HISTORY_COSMOS=true`. |
 | Knowledge graph (optional) | Azure Cosmos DB for Apache Gremlin | entities / edges / community nodes | `graphrag/cosmos_gremlin.py`. Not deployed (`USE_GRAPHRAG=false`); `graph_search` stubs without a Cosmos Gremlin account. |
 | In-memory cache (optional) | Redis (semantic + embedding cache) | LLM-response cache keyed by embedding similarity; embedding cache | `core/semantic_cache.py`. No-op when `REDIS_URL` unset. Ephemeral / TTL'd; never a source of truth. |
-| Ingestion-side search index (optional, not runtime retrieval) | Azure AI Search | chunk index built during ingestion | `prepdocslib/searchmanager.py`, `servicesetup.py`. Not queried by the chat retriever. |
+| Hybrid search retrieval (optional, gated off) | Azure AI Search | `rag-index`: BM25 + HNSW vector + optional semantic rerank | Ingestion: `prepdocslib/searchmanager.py`, `servicesetup.py`. Runtime: `core/azure_search_retriever.py` (`DOCUMENT_RETRIEVER=azure_search`). Service not provisioned until `useAzureSearch=true`. |
 | Files / blobs | Azure Blob Storage / ADLS Gen2 | raw PDFs, audio, figures, per-user uploads | `prepdocslib/blobmanager.py`. |
 | Embedding **producer** (not a store) | Azure AI Foundry `text-embedding-3-large` (deployed; local `.env` may use `-3-small`) | text vectors written into the retriever's vector store | `core/embeddings_client.py`. |
 
@@ -333,6 +350,9 @@ cd app/frontend && npm install && npm run dev
 
 # Backend + frontend (without Docker)
 ./app/start.sh
+
+# Chainlit tutor UI (alternate chat frontend, port 8000)
+cd app/backend && chainlit run chainlit_app.py --host 0.0.0.0 --port 8000
 ```
 
 ### Local-only mode (no Azure)
@@ -374,7 +394,10 @@ locust -f locustfile.py --host http://localhost:50505
 ./scripts/prepdocs.sh
 ./scripts/prepdocs.sh --removeall
 ./scripts/prepdocs.sh --category "scientific-paper"
-python scripts/copy_prepdocslib.py
+python app/backend/prepdocs.py --source learn --learn-urls data/learn/azure_ai_seed.txt
+python app/backend/prepdocs.py --source obsidian --vault "$OBSIDIAN_VAULT_PATH"
+python scripts/fetch_learn.py            # fetch MS Learn pages into data/learn/fetched/
+python scripts/copy_prepdocslib.py       # sync prepdocslib into function bundles
 ```
 
 ---
@@ -398,7 +421,9 @@ Key vars (note: many below belong to optional/off features; the deployed env is 
 | `AZURE_OPENAI_EVAL_DEPLOYMENT` | eval LLM |
 | `AZURE_OPENAI_REASONING_DEPLOYMENT` | optional o-series for `reasoning_effort=high` |
 | `AZURE_OPENAI_KNOWLEDGEBASE_DEPLOYMENT` | agentic-retrieval planner |
-| `AZURE_SEARCH_SERVICE` `AZURE_SEARCH_INDEX` | AI Search |
+| `AZURE_SEARCH_SERVICE` `AZURE_SEARCH_INDEX` | AI Search (empty when `useAzureSearch=false`) |
+| `AZURE_SEARCH_SEMANTIC_RANKER` | semantic rerank in the `azure_search` retriever |
+| `DOCUMENT_RETRIEVER` | retriever backend: `cosmos` (deployed) / `redis_notes` (local default) / `azure_search` |
 | `AZURE_DOCUMENTINTELLIGENCE_SERVICE` | DocIntel |
 | `AZURE_SPEECH_SERVICE_ID` `AZURE_SPEECH_SERVICE_LOCATION` | Speech |
 | `AZURE_CONTENTSAFETY_ENDPOINT` | inference-time safety |
@@ -414,10 +439,14 @@ Key vars (note: many below belong to optional/off features; the deployed env is 
 | `USE_REDIS_CACHE` | Azure Managed Redis: semantic cache + working memory + app cache |
 | `USE_POSTGRES_VECTOR` | PostgreSQL pgvector + azure_ai secondary analytics |
 | `USE_VERIFIER` | Verifier pass |
+| `USE_HIERARCHICAL_AGENTS` | opt-in supervisor/teams orchestration (`hierarchical_multiagent_approach.py`) |
 | `USE_VOICE_DEMO` `USE_SQL_DEMO` | Demo route flags |
 | `USE_CONTENT_SAFETY` `USE_PII_REDACTION` | Safety toggles |
 | `USE_FEEDBACK` | Feedback widget + endpoint |
-| `USE_LOCAL_MODE` | Ollama/faster-whisper/FAISS/SQLite swap |
+| `USE_LOCAL_MODE` / `MODE=local` | local-model swap; `MODE=local` routes chat to Ollama via `agents/_llm.py` |
+| `OLLAMA_BASE_URL` `OLLAMA_EMBED_MODEL` | Ollama OpenAI-compatible endpoint + embedding model (default `nomic-embed-text`) |
+| `OBSIDIAN_VAULT_PATH` `OBSIDIAN_CATEGORY` | Obsidian vault ingestion (`prepdocs.py --source obsidian`) |
+| `YOUTUBE_API_KEY` | optional YouTube Data API metadata in `youtube_service.py` (stub without it) |
 | `USE_EVAL` `USE_AI_PROJECT` | Provisions eval model + Foundry project |
 | `RATE_LIMIT_PER_MIN` | Per-IP rate limit |
 | `MAX_TOKENS_PER_SESSION` | Cost cap per chat session |
@@ -536,11 +565,11 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 - **Frontend build before e2e:** Playwright tests use `app/frontend/build/`.
 - **Cosmos Gremlin throughput:** default RU/s is low. Scale up in `infra/core/cosmos/cosmos-gremlin.bicep` before bulk graph indexing.
 - **GraphRAG community refresh:** updating the graph does NOT auto-refresh community summaries. Call `graphrag/community.py:refresh()`.
-- **Dual vector stores:** Azure AI Search (retrieval) and OpenAI file_search (citations) must stay in sync. `prepdocs.sh` writes to both.
+- **Multiple vector stores:** ingestion upserts into the configured primary store (`cosmoswriter.py` when `DOCUMENT_RETRIEVER=cosmos`, `searchmanager.py` for Azure Search) and optionally the OpenAI file_search vector store (citations). If more than one is live they must stay in sync - re-run `prepdocs.sh` after switching retrievers.
 - **Multimodal model swap:** if changing the chat model, confirm it supports image input (`gpt-4o`, `gpt-4o-mini`, `gpt-4.1-mini`).
 - **Portfolio site:** `site/index.html` is served as-is by `.github/workflows/pages.yml` (no Jekyll build, no `DEMO_URL` injection). Edit the HTML directly.
 - **iCloud dataless files:** anything under `~/Documents/` may be evicted - copy or `dd` materialize before ingestion.
-- **Retriever selection:** primary retrieval is chosen by `DOCUMENT_RETRIEVER` (`cosmos` deployed, `redis_notes` local). Do not describe Azure AI Search as the runtime retriever - it is ingestion-side only.
+- **Retriever selection:** primary retrieval is chosen by `DOCUMENT_RETRIEVER` (`cosmos` deployed, `redis_notes` local default, `azure_search` code-complete). Do not describe Azure AI Search as the deployed retriever - the service is gated off (`useAzureSearch=false`) until someone flips it and re-ingests.
 - **Redis is optional + ephemeral:** `core/semantic_cache.py` no-ops when `REDIS_URL` is unset. Cosmos NoSQL is the durable source of truth for conversations.
 - **No em dashes anywhere.** Use single hyphen `-` only.
 - **No end-of-turn recaps in chat-app responses** (user preference applies to dev workflow only, not application code).
@@ -575,7 +604,7 @@ cd ../.. && pytest tests/e2e/e2e.py
 - Prompts: every Jinja2 file starts with a header comment naming agent + expected inputs.
 - Tests: mock at the HTTP transport layer (httpx), not at SDK methods. Fixtures in `tests/conftest.py`.
 - No emojis in code/docs unless explicitly requested.
-- Default Claude pipeline model: `claude-sonnet-4-20250514` (per user memory).
+- Default Claude pipeline model: `claude-sonnet-5` (`claude-sonnet-4-20250514` retired 2026-06-15 and now 404s).
 
 ---
 
@@ -593,7 +622,7 @@ Legend: **[D]** wired in the deployment, **[O]** optional/code-only (off or stub
 | Key Vault | secrets | [D] | RBAC in `infra/app/rbac.bicep` |
 | OpenAI Responses file_search | citations | [O] | `agents/tools.py:file_search` (stubs if no vector store id) |
 | Cosmos Gremlin + GraphRAG | knowledge graph | [O] | `graphrag/cosmos_gremlin.py`, `agents/tools.py:graph_search` |
-| Azure AI Search | ingestion-side index (not runtime retrieval) | [O] | `prepdocslib/searchmanager.py` |
+| Azure AI Search | hybrid retrieval + ingestion index (provisionable, gated off) | [O] | `core/azure_search_retriever.py`, `prepdocslib/searchmanager.py`; `infra/main.bicep` behind `useAzureSearch=false` |
 | Azure Document Intelligence | PDF layout/OCR | [O] | `prepdocslib/pdfparser.py` |
 | Azure Speech / Voice Live | audio -> text + diarization | [O] | `voice/speech_client.py`, `voice/voice_live.py` |
 | Azure AI Content Safety | runtime prompt/completion filtering | [O] | `safety/content_safety.py` |

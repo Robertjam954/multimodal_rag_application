@@ -10,7 +10,7 @@ For Claude Code operating instructions, see [CLAUDE.md](CLAUDE.md).
 
 This project demonstrates an end-to-end pattern for grounded conversational AI over private multimodal corpora. The chat path is a LangGraph multi-agent loop (Router -> Retriever -> Answerer -> Verifier -> FollowUps) that streams tokens over Server-Sent Events while the Verifier grounds each claim against retrieved evidence. Retrieval is served by a pluggable document retriever; the deployed configuration uses an **Azure Cosmos DB (NoSQL) vector store**, and the default local configuration uses a Redis-backed notes store. Optional layers - GraphRAG (Cosmos Gremlin), OpenAI Responses `file_search` citations, Azure Document Intelligence ingestion, Azure Speech voice, content safety, and PII redaction - exist in the code and are toggled by feature flags. A separate SchemaFlow multi-agent planner demonstrates SQL change planning. LangSmith and Azure Monitor (OpenTelemetry) instrument the spans.
 
-> **Code vs. deployment.** The backend implements a broad feature set behind `USE_*` flags. The current Azure deployment enables a focused subset (Cosmos vector retrieval + Verifier + chat history). Optional integrations that are not wired into the deployed infra (Azure AI Search, GraphRAG, voice, content safety, PII, Redis, PostgreSQL) fall back to stubs or are turned off. See [Deployed configuration](#deployed-configuration) below.
+> **Code vs. deployment.** The backend implements a broad feature set behind `USE_*` flags. The current Azure deployment enables a focused subset (Cosmos vector retrieval + Verifier + chat history). Optional integrations that are not wired into the deployed infra (GraphRAG, voice, content safety, PII, Redis, PostgreSQL) fall back to stubs or are turned off. Azure AI Search is fully implemented (ingestion index + a hybrid `azure_search` runtime retriever) and composed into the infra, but gated off by default (`useAzureSearch=false`) to avoid the service cost. See [Deployed configuration](#deployed-configuration) below.
 
 The pipeline transitions from **Natural Language Space** (PDFs and recordings) to **Code Entity Space** (graph nodes, vector chunks, citation annotations, verifier verdicts, cost meters).
 
@@ -106,12 +106,15 @@ flowchart LR
         S1[FileStrategy<br/>local ingestion]
         S2[IntegratedVectorizerStrategy<br/>AI Search vectorizer]
         S3[CloudIngestionStrategy<br/>Functions + custom skills]
+        S4[LearnStrategy<br/>MS Learn URL list]
+        S5[ObsidianStrategy<br/>local vault notes]
     end
 
     subgraph Parsers["Parsers"]
         P1[pdfparser<br/>DocIntel + PyPDF fallback]
         P2[html / csv / json / textparser]
         P3[voice / diarizer<br/>utterance JSON]
+        P4[youtubeparser / learndocparser]
     end
 
     subgraph Processors["Processors"]
@@ -122,7 +125,8 @@ flowchart LR
     end
 
     subgraph Writers["Index writers"]
-        W1[searchmanager<br/>-> AI Search]
+        W0[cosmoswriter<br/>-> Cosmos NoSQL vector store - deployed]
+        W1[searchmanager<br/>-> AI Search - gated off]
         W2[graphrag.indexer<br/>-> Cosmos Gremlin]
         W3[file_search uploader<br/>-> OpenAI vector store]
     end
@@ -130,11 +134,14 @@ flowchart LR
     S1 --> P1 & P2
     S2 --> P1 & P2
     S3 --> P1 & P2
+    S4 --> P4
+    S5 --> T1
     P3 --> T1
+    P4 --> T1
     P1 --> T2 --> T3
     P2 --> T1 --> T3
     T1 --> T4
-    T3 --> W1 & W3
+    T3 --> W0 & W1 & W3
     T4 --> W2
 ```
 
@@ -223,12 +230,13 @@ Where each capability lives in the code (subdirectories of `app/backend/`):
 |---|---|
 | Multi-agent chat | `approaches/multiagent_approach.py`, `agents/{router,retriever,answerer,verifier,followups}.py` |
 | Hierarchical agent teams (opt-in via `USE_HIERARCHICAL_AGENTS`) | `approaches/hierarchical_multiagent_approach.py`, `agents/hierarchical_graph.py` |
-| Document retrieval (pluggable) | `core/document_retriever.py`, `core/cosmos_vector_retriever.py` (deployed), Redis notes retriever (local default) |
+| Document retrieval (pluggable) | `core/document_retriever.py`, `core/cosmos_vector_retriever.py` (deployed), Redis notes retriever (local default), `core/azure_search_retriever.py` (hybrid BM25+vector, service gated off) |
+| Chainlit tutor UI (alternate frontend) | `chainlit_app.py`, `agents/tutor_agent.py`, `agents/notes_search_tool.py`, `core/conversation_memory.py` |
 | GraphRAG (optional) | `graphrag/`, `agents/tools.py:graph_search` (stubs when no Cosmos Gremlin account) |
 | Citations (optional) | `agents/tools.py:file_search` - OpenAI Responses `file_search` (stubs when no vector store id) |
 | SchemaFlow SQL | `approaches/sql_schemaflow_approach.py`, `agents/sql_schemaflow.py` |
 | Voice (optional) | `voice/` (Azure Speech / Voice Live bridge), routes `/voice/stream`, `/voice/clean` |
-| Data ingestion | `prepdocs.py`, `prepdocslib/` |
+| Data ingestion | `prepdocs.py --source files\|learn\|obsidian`, `prepdocslib/` (incl. YouTube transcript + MS Learn + Obsidian vault strategies) |
 | Safety (optional) | `safety/content_safety.py`, `safety/pii.py` |
 | Tracing | `tracing/otel.py` (Azure Monitor), `tracing/langsmith.py` |
 | Evaluation | `evals/` (see files under `evals/`) |
@@ -245,7 +253,7 @@ Where each capability lives in the code (subdirectories of `app/backend/`):
 - **Auth:** keyless / Entra ID only. The Container App uses a system-assigned managed identity; `infra/app/rbac.bicep` grants Cognitive Services OpenAI User, Azure AI User, Cosmos DB Built-in Data Contributor, Storage Blob Data Contributor, Key Vault Secrets User, and AcrPull. No API keys.
 - **Feature flags set by the deploy:** `USE_VERIFIER=true`, `USE_VECTOR_SEARCH=true`, `USE_FEEDBACK` from param, `USE_CHAT_HISTORY_COSMOS=true`. Turned off: `USE_GRAPHRAG`, `USE_MULTIMODAL`, `USE_VOICE_DEMO`, `USE_SQL_DEMO`, `USE_CONTENT_SAFETY`, `USE_PII_REDACTION`.
 
-Note: several Bicep modules for optional services (Azure AI Search, Speech, Vision, Content Safety, Document Intelligence, Cosmos Gremlin) exist under `infra/core/` but are not currently composed into `main.bicep`.
+Azure AI Search is composed into `main.bicep` behind the `useAzureSearch` parameter (default `false`): no Search service is provisioned or billed until it is flipped, at which point the backend env, RBAC (Search Service Contributor + Search Index Data Contributor), and `DOCUMENT_RETRIEVER=azure_search` wiring are already in place. Bicep modules for the other optional services (Speech, Vision, Content Safety, Document Intelligence, Cosmos Gremlin) exist under `infra/core/` but are not composed into `main.bicep`.
 
 ---
 
