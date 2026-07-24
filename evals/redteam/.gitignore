@@ -1,0 +1,7 @@
+# Promptfoo red-team artifacts - generated, may embed adversarial content.
+redteam.yaml
+output.json
+*.output.json
+results/
+.promptfoo/
+promptfoo-errors.log
