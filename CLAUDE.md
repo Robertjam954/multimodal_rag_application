@@ -228,15 +228,16 @@ multimodal_rag_application/
 │   └── images/
 │
 ├── data/{papers,audio,graphs,learn}/       # learn/ holds fetched MS Learn pages + seed URL lists
-└── .github/workflows/{pages,update-claude-md}.yml + claude-md-review-prompt.md
-                                            # (only these exist; no azure-dev/tests/eval workflows yet)
+└── .github/workflows/                     # pages.yml, update-claude-md.yml, claude-review.yml,
+                                            # azure-static-web-apps-blue-cliff-0cb263c0f.yml + claude-md-review-prompt.md
+                                            # (no azure-dev/tests/eval workflows yet)
 ```
 
 ---
 
 ## 4. Architecture (services + data flow)
 
-See `docs/architecture.md` for full mermaid diagrams. Summary:
+(A full `docs/architecture.md` with mermaid diagrams is a TODO - it does not exist yet.) Summary:
 
 ```
 Browser (React 19 + Vite)
@@ -356,7 +357,7 @@ cd app/backend && chainlit run chainlit_app.py --host 0.0.0.0 --port 8000
 ```
 
 ### Local-only mode (no Azure)
-Set `MODE=local` to swap AOAI for Ollama, Speech for faster-whisper, Search for FAISS, and Cosmos for SQLite. Useful for contributors without Azure. See `docs/localdev.md`.
+Set `MODE=local` to swap AOAI for Ollama, Speech for faster-whisper, Search for FAISS, and Cosmos for SQLite. Useful for contributors without Azure. (A dedicated `docs/localdev.md` is a TODO; local-mode env vars are documented in section 6.)
 
 ### Tests
 ```bash
@@ -516,7 +517,7 @@ Deploys backend to Container Apps + backend Docker image to ACR. Frontend is ser
 1. `prepdocslib/<format>parser.py` implementing `Parser`.
 2. Register in `prepdocs.py:setup_file_processors()`.
 3. `python scripts/copy_prepdocslib.py` to sync into function bundles.
-4. Update `docs/data_ingestion.md`.
+4. Update the ingestion flow in this file (section 4) and README to cover the new format.
 
 ### Add a Verifier rule
 
@@ -538,8 +539,9 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 - **Dashboard:** `azd monitor`.
 - **CI / CD:** 
   - `pages.yml` - deploys static portfolio site to GitHub Pages whenever `site/` changes
-  - `update-claude-md.yml` - auto-syncs CLAUDE.md with codebase on push/schedule
-  - `self-document.yml` - runs self-documenting agent to update STATUS.md and ADRs
+  - `update-claude-md.yml` - Monday verification pass that syncs CLAUDE.md/README with the codebase (uses `claude-md-review-prompt.md`) and regenerates `TODO.md`
+  - `claude-review.yml` - Claude Code review on pull requests
+  - `azure-static-web-apps-blue-cliff-0cb263c0f.yml` - auto-generated Azure Static Web Apps deploy
   - Backend deployment: manual `azd up` to Azure Container Apps (no automated CI yet)
   - Frontend: included in backend Docker image; docker-compose for local dev includes both services
 

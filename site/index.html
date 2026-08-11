@@ -86,6 +86,8 @@
   .btn.ghost:hover { text-decoration: none; border-color: #33415a; }
   .btn .arrow { transition: transform .2s; }
   .btn:hover .arrow { transform: translateX(3px); }
+  .btn.disabled { background: var(--chip); border-color: var(--border); color: var(--muted); cursor: not-allowed; pointer-events: none; opacity: .85; }
+  .status .offline { width: 8px; height: 8px; border-radius: 50%; background: #f5b544; box-shadow: 0 0 10px #f5b544; }
 
   /* Sections */
   section { padding: 46px 0; }
@@ -155,7 +157,7 @@
 
 <header class="hero">
   <div class="wrap">
-    <span class="status"><span class="live"></span> Live demo running on Azure</span>
+    <span class="status"><span class="offline"></span> Live demo temporarily offline</span>
     <h1>A multimodal RAG tutor that cites its sources.</h1>
     <p class="lede">
       Upload a PDF, ask a question, and get a grounded answer with page-level citations - produced by a
@@ -163,12 +165,14 @@
       and secured end-to-end with Entra ID (no keys).
     </p>
     <div class="cta">
-      <a class="btn primary" href="https://ca-backend-terrjvrcuwxim.livelyisland-19dcdcfb.eastus2.azurecontainerapps.io" target="_blank" rel="noopener">
-        Try the live demo <span class="arrow">-&gt;</span>
+      <a class="btn primary" href="https://github.com/Robertjam954/multimodal_rag_application" target="_blank" rel="noopener">
+        View source <span class="arrow">-&gt;</span>
       </a>
-      <a class="btn ghost" href="https://github.com/Robertjam954/multimodal_rag_application" target="_blank" rel="noopener">
-        View source
-      </a>
+      <!-- Live demo re-enable: when the Azure backend is running again, swap the span below back to:
+           <a class="btn ghost" href="https://ca-backend-terrjvrcuwxim.livelyisland-19dcdcfb.eastus2.azurecontainerapps.io" target="_blank" rel="noopener">Try the live demo</a> -->
+      <span class="btn disabled" title="The hosted demo is temporarily offline while the Azure backend is redeployed">
+        Live demo temporarily offline
+      </span>
     </div>
   </div>
 </header>
@@ -258,12 +262,14 @@
 
 <section>
   <div class="wrap" style="text-align:center;">
-    <h2>See it answer your questions</h2>
-    <p class="section-sub" style="margin: 0 auto 26px;">The demo is live now. Upload a PDF or ask about the sample papers already indexed.</p>
-    <a class="btn primary" href="https://ca-backend-terrjvrcuwxim.livelyisland-19dcdcfb.eastus2.azurecontainerapps.io" target="_blank" rel="noopener">
-      Open the live demo <span class="arrow">-&gt;</span>
+    <h2>See it in action</h2>
+    <p class="section-sub" style="margin: 0 auto 26px;">The hosted demo is temporarily offline while the Azure backend is redeployed. In the meantime, browse the full implementation on GitHub.</p>
+    <a class="btn primary" href="https://github.com/Robertjam954/multimodal_rag_application" target="_blank" rel="noopener">
+      View source <span class="arrow">-&gt;</span>
     </a>
-    <p class="note">Cold start may take a few seconds if the app has scaled down.</p>
+    <!-- Live demo re-enable: restore the button above to the Azure Container App URL once the backend is up:
+         https://ca-backend-terrjvrcuwxim.livelyisland-19dcdcfb.eastus2.azurecontainerapps.io -->
+    <p class="note">Check back soon - the live demo returns once the deployment is restored.</p>
   </div>
 </section>
 

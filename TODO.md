@@ -7,14 +7,17 @@ the codebase. No "Done since last week" section yet - this is the first run.
 
 ## P1 - Correctness and blockers
 
-- [ ] CLAUDE.md sections 3 and 8 claim `.github/workflows/{azure-dev,tests,eval-nightly}.yml` exist ("PR CI: tests.yml", "Nightly: eval-nightly.yml"); only `pages.yml` and `update-claude-md.yml` are on disk. Either add the missing workflows or remove the claims.
-- [ ] CLAUDE.md section 3 lists ~16 files under `docs/` (architecture.md, localdev.md, data_ingestion.md, etc.) and several sections link to them; `docs/` actually contains only `hierarchical_agent_teams_template.ipynb` and `images/`. Write the docs or fix the references.
-- [ ] CLAUDE.md describes `site/` as a Jekyll site (_config.yml, Gemfile, _layouts, _posts, jekyll-* plugins); `site/` contains only `index.html`. Reconcile sections 2, 3, and 10 (the `DEMO_URL` gotcha) with `.github/workflows/pages.yml`.
-- [ ] CLAUDE.md section 3 claims `.devcontainer/` and `ps-rule.yaml` at repo root; neither exists. Remove or restore.
-- [ ] Scripts drift: CLAUDE.md lists `setup_cloud_ingestion.{ps1,py}`, `auth_init.{ps1,py}`, `auth_update.{sh,ps1,py}`, `auth_common.py`, `roles.ps1`, `load_python_env.{sh,ps1}`, `cost_alerts.bicep`, and `app/start.ps1`; none exist. `scripts/fetch_learn.py` exists but is undocumented.
-- [ ] Infra drift: CLAUDE.md claims `infra/main.test.bicep`, `backend-dashboard.bicep`, `network-isolation.bicep`, `private-endpoints.bicep`; none exist. `infra/app/rbac.bicep` exists but is undocumented.
-- [ ] CLAUDE.md section 3 claims `tests/test_prepdocslib_pdfparser.py`; the file does not exist (only `test_prepdocslib_textsplitter.py` does).
-- [ ] Frontend drift: CLAUDE.md claims `src/router.tsx` and `src/lib/theme.ts`; neither exists (`theme.ts` lives at `src/theme.ts`, `src/lib/` has only `cost.ts` and `deepLink.ts`).
+All P1 CLAUDE.md-drift items resolved 2026-07-25 (4 had already been fixed in earlier
+CLAUDE.md syncs; the workflow + `docs/*.md` items were fixed in this pass).
+
+- [x] Workflows (2026-07-25): CLAUDE.md section 3 tree and section 9 CI/CD list now match the four workflows actually on disk (`pages.yml`, `update-claude-md.yml`, `claude-review.yml`, `azure-static-web-apps-blue-cliff-0cb263c0f.yml`) plus `claude-md-review-prompt.md`. Removed the phantom `self-document.yml` reference. No `azure-dev/tests/eval-nightly` workflows are claimed anymore.
+- [x] `docs/*.md` references (2026-07-25): the three inline links to nonexistent files (`docs/architecture.md` §4, `docs/localdev.md` §5, `docs/data_ingestion.md` §8) are re-worded to mark those docs as TODOs and point at the in-file sections that actually carry the content. Section 3 tree already listed `docs/` accurately (`adr/`, the `.ipynb`, `images/`).
+- [x] `site/` Jekyll drift (2026-07-25): CLAUDE.md sections 2/3/11 already described `site/` as a single static `index.html` with `.nojekyll` (no Jekyll build). Deleted the vestigial empty `_includes/_layouts/_posts/assets` scaffolding dirs so the filesystem matches the docs.
+- [x] `.devcontainer/` / `ps-rule.yaml` (2026-07-25): CLAUDE.md tree no longer claimed either; removed the stray empty `.devcontainer/` dir. `ps-rule.yaml` was already absent from the docs.
+- [x] Scripts drift: already reconciled in an earlier CLAUDE.md sync - section 3 `scripts/` tree matches disk exactly (11 files incl. `fetch_learn.py`). Verified 2026-07-25.
+- [x] Infra drift: already reconciled - section 3 `infra/` tree matches disk and documents `infra/app/rbac.bicep`; no phantom `main.test/backend-dashboard/network-isolation/private-endpoints.bicep`. Verified 2026-07-25.
+- [x] `tests/test_prepdocslib_pdfparser.py`: already removed from the docs; section 3 lists only `test_prepdocslib_textsplitter.py`. Verified 2026-07-25.
+- [x] Frontend drift: already reconciled - `theme.ts` is documented at `src/theme.ts`, no `src/router.tsx` claim (routing noted as living in `App.tsx`), `src/lib/` correctly lists `cost.ts` + `deepLink.ts`. Verified 2026-07-25.
 
 ## P2 - In-flight and target work
 

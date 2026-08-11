@@ -145,6 +145,25 @@ async def _render_sources(
     await cl.Message(content="\n".join(lines), author="Sources", actions=actions).send()
 
 
+@cl.oauth_callback
+def oauth_callback(
+    provider_id: str,
+    token: str,
+    raw_user_data: dict[str, Any],
+    default_user: cl.User,
+) -> cl.User | None:
+    """Gate login behind GitHub OAuth. Return the user to allow, None to deny.
+
+    Requires OAUTH_GITHUB_CLIENT_ID, OAUTH_GITHUB_CLIENT_SECRET, and
+    CHAINLIT_AUTH_SECRET in the environment (see app/backend/.env). To restrict
+    access, inspect raw_user_data (e.g. GitHub ``login`` or org membership) and
+    return None for anyone who should not get in.
+    """
+    login = raw_user_data.get("login", "unknown")
+    logger.info("OAuth login via %s as %s", provider_id, login)
+    return default_user
+
+
 @cl.on_chat_start
 async def on_chat_start() -> None:
     sid = f"chainlit-{uuid.uuid4().hex[:12]}"
