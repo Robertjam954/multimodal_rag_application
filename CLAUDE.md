@@ -228,8 +228,9 @@ multimodal_rag_application/
 │   └── images/
 │
 ├── data/{papers,audio,graphs,learn}/       # learn/ holds fetched MS Learn pages + seed URL lists
-└── .github/workflows/{pages,update-claude-md}.yml + claude-md-review-prompt.md
-                                            # (only these exist; no azure-dev/tests/eval workflows yet)
+├── .devcontainer/{devcontainer.json,Dockerfile,docker-compose.yml,post-create.sh}
+└── .github/workflows/{pages,update-claude-md,self-document}.yml + claude-md-review-prompt.md
+                                            # (no azure-dev/tests/eval workflows yet)
 ```
 
 ---
@@ -539,9 +540,10 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 - **CI / CD:** 
   - `pages.yml` - deploys static portfolio site to GitHub Pages whenever `site/` changes
   - `update-claude-md.yml` - auto-syncs CLAUDE.md with codebase on push/schedule
-  - `self-document.yml` - runs self-documenting agent to update STATUS.md and ADRs
+  - `self-document.yml` - runs the `.claude/agents/self-documenter.md` agent to update STATUS.md + project markdown + ADRs, opening a PR
   - Backend deployment: manual `azd up` to Azure Container Apps (no automated CI yet)
   - Frontend: included in backend Docker image; docker-compose for local dev includes both services
+  - There is no test/eval CI workflow yet; run `pytest` and the eval scripts locally.
 
 ---
 
