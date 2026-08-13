@@ -1,18 +1,20 @@
-# Task: Update CLAUDE.md Documentation
+# Task: Verify CLAUDE.md and Generate the Weekly TODO
 
-You are tasked with reviewing and updating the CLAUDE.md file at the root of this
-repository. CLAUDE.md is the operating manual that future Claude Code sessions read
-before working in this codebase, so it must reflect the true, current state of the
-project.
+You are running the Monday documentation pass for this repository. It has two
+deliverables:
 
-## Your Mission
-
-Conduct a comprehensive analysis of the entire codebase and update CLAUDE.md so it is
-100% accurate, complete, and useful. Where the existing CLAUDE.md and the code
-disagree, **always favor the code.**
+1. **Verify CLAUDE.md and README.md.** CLAUDE.md is the operating manual that future
+   Claude Code sessions read before working in this codebase; README.md is the
+   public-facing overview. The developer updates both at the end of each working
+   session; your job is to keep them honest. Compare every claim in each file
+   against the actual code and fix only what has drifted. Where the existing docs
+   and the code disagree, **always favor the code.**
+2. **Regenerate TODO.md.** A prioritized, dated task list at the repository root
+   that captures what needs doing next, derived from your analysis.
 
 ## About this project
 
+<!-- REPO_SPECIFIC_START -->
 This is a multimodal RAG application (an "AI tutor") with these moving parts:
 
 - **Backend** (`app/backend/`) - a Quart (async Flask) app served by Gunicorn. Key
@@ -30,91 +32,90 @@ This is a multimodal RAG application (an "AI tutor") with these moving parts:
 
 Treat the list above as a starting map, not ground truth - verify every path exists
 and document anything significant that is missing from it.
+<!-- REPO_SPECIFIC_END -->
 
-## Analysis Requirements
+## Part 1: CLAUDE.md and README.md verification
 
-### 1. Project overview
-- Verify the description and stated purpose match what the code actually does.
-- Identify missing key features or capabilities (e.g. the voice transcription flow).
+### Analysis requirements
 
-### 2. Tech stack and versions
-- Backend: read `app/backend/requirements.in` / `requirements.txt` (and any
-  `pyproject.toml`) for Python deps and pinned versions; note the Python version.
-- Frontend: read `app/frontend/package.json` (and lockfile) for framework versions
-  (React, Vite, Fluent UI, TypeScript).
-- Infra/tooling: note `azure.yaml`, `azd`, Bicep, Gunicorn, Docker if used.
-- Remove anything listed that is not actually used.
+1. **Project overview** - verify the description and stated purpose match what the
+   code actually does; identify missing key features or capabilities.
+2. **Tech stack and versions** - verify frameworks and versions against dependency
+   manifests (pyproject.toml, requirements*.txt, package.json, lockfiles, config
+   files). Remove technologies listed but not actually used; add ones used but
+   undocumented.
+3. **Commands** - verify every documented command exists and is correct (scripts,
+   Makefiles, package.json scripts, CLI entrypoints). Add missing commonly-used
+   commands.
+4. **Directory structure** - verify all documented paths exist; document significant
+   directories or files not mentioned; note naming conventions.
+5. **Configuration and environment variables** - document required variable NAMES
+   (never values), config files, and their purposes.
+6. **Scripts and automation** - analyze the scripts directory and all GitHub Actions
+   workflows; document what each does.
+7. **Conventions and gotchas** - extract coding conventions from the code; keep any
+   documented gotchas that still apply and remove ones that no longer do.
+8. **README.md** - verify it the same way as CLAUDE.md: the YAML front-matter
+   (languages and products actually used), the Key features list (each feature's
+   module and output must exist), the ASCII architecture diagram, every command in
+   the Deploy section, the Outputs table, and the Roadmap (target) list (promote
+   items that now work; demote claims that no longer do). Fix any drift.
+9. **Dependency manifests vs imports** - verify the requirements files against the
+   actual third-party imports in the code, textually only (never run installs,
+   pip, or uv): `app/backend/requirements.in` + `app/backend/requirements.txt`
+   against imports across `app/backend/**/*.py`, `evals/requirements.txt` against
+   `evals/*.py`, and `app/functions/requirements.txt` against
+   `app/functions/**/*.py` (it includes `-r ../backend/requirements.in`). Add
+   imported-but-undeclared packages to the manifest with a comment that they need
+   re-pinning via `uv pip compile`; flag declared-but-unused packages in TODO.md
+   rather than deleting them.
 
-### 3. Commands
-- Backend: how to install deps, run locally (`app/start.sh`, Quart/Gunicorn), and the
-  exact dev port. Flag any known gotchas (e.g. the `quart` CLI not being on PATH after
-  the venv sync, and the correct way to launch).
-- Frontend: the npm/vite scripts (dev, build, lint, typecheck) and dev port.
-- Tests and evals: how to run pytest, Playwright, and any eval scripts.
-- `azd` provision/deploy commands.
+### Output requirements for CLAUDE.md and README.md
 
-### 4. Architecture and directory structure
-- Recursively scan the tree and verify documented paths exist.
-- Document the request flow: frontend -> backend routes -> approaches/agents ->
-  Azure OpenAI / AI Search, and the separate `/voice/stream` WebSocket +
-  `/voice/clean` path.
-- Note file-naming and code conventions actually used in each area.
+- Maintain the current structure; update content in place for accuracy.
+- Add new sections only for significant undocumented findings.
+- Remove outdated information.
+- Be thorough but concise - every line should provide value.
+- If a file is already accurate, make NO edits to it.
 
-### 5. Backend approaches, agents, and RAG
-- Summarize each module under `approaches/`, `agents/`, `graphrag/`, and
-  `prepdocslib/`: what it does and when it is used.
-- Document the `core` Azure OpenAI / Foundry client (`get_client`,
-  `chat_deployment`, default deployment) and how other modules consume it.
+## Part 2: TODO.md generation
 
-### 6. Voice transcription path
-- Document `voice/voice_live.py` (Azure Voice Live WebSocket bridge: API version,
-  sample rate, session config, event mapping) and `voice/transcript_cleaner.py`
-  (best-effort LLM cleanup with graceful fallback to the raw transcript).
-- Document the `/voice/stream` WebSocket and `/voice/clean` POST routes and the
-  feature flag that gates them (`USE_VOICE_DEMO`).
-- Note the frontend `VoiceRecorder` component (PCM16 24 kHz AudioWorklet capture).
+Regenerate `TODO.md` at the repository root. Overwrite the previous week's file
+completely. Structure:
 
-### 7. Frontend
-- List the pages in `src/pages/` and the key components in `src/components/`.
-- Document how the frontend talks to the backend (`src/api/`), and the dev proxy.
+```markdown
+# TODO
 
-### 8. Configuration and environment variables
-- Document required env vars by name only (never values): the `AZURE_*` Foundry /
-  OpenAI / Speech / Voice Live settings, search/storage settings, and feature flags.
-- Note how env is loaded (`load_azd_env.py`, gitignored `.azure/<env>/.env`).
-- Document `azure.yaml` and the relevant Bicep parameters in `infra/`.
+Generated by the weekly docs verification workflow. Last updated: <YYYY-MM-DD>.
+Items are carried forward, re-prioritized, or dropped each Monday based on the
+current state of the codebase.
 
-### 9. Scripts and automation
-- Document each script in `scripts/` and at the repo root.
-- Document GitHub Actions workflows in `.github/workflows/` (including this
-  CLAUDE.md update workflow itself).
+## P1 - Correctness and blockers
+- [ ] <items that block or mislead: broken commands, failing tests, doc/code drift you could not fix confidently>
 
-### 10. Development guidelines and gotchas
-- Capture coding conventions, the local-run gotchas, and any non-obvious setup
-  (TLS/cert issues, auth scopes, required Azure roles).
+## P2 - In-flight and target work
+- [ ] <unfinished features, items marked (target)/planned in docs, TODO/FIXME comments in code worth acting on>
 
-## Output Requirements
+## P3 - Hygiene and hardening
+- [ ] <missing tests, missing docs, dependency pins, lint issues, dead code>
 
-Update CLAUDE.md so that it:
+## Done since last week
+- <items from the previous TODO.md that are now complete, verified against the code>
+```
 
-1. **Preserves the existing structure and any content that is still accurate.**
-2. **Adds sections** for significant findings not currently documented.
-3. **Removes outdated information** (including documented workflows/paths that do not
-   actually exist).
-4. Uses clear, concise language and concrete examples where helpful.
-5. Prioritizes the information most useful for making code changes.
+Rules for the TODO list:
 
-## Important Notes
+- Read the previous TODO.md first (if present). Carry forward still-open items,
+  move completed ones to "Done since last week", and drop obsolete ones.
+- Derive items from evidence: doc/code drift you found, TODO/FIXME/HACK comments,
+  items marked "(target)" or "planned" in the docs, empty or stub modules,
+  workflows referencing missing files, untested modules.
+- Every item must be actionable and specific (name the file or command), not vague
+  ("improve tests" is bad; "add tests for src/foo.py:parse_x" is good).
+- Keep it under roughly 30 items; prioritize ruthlessly.
 
-- Be thorough but concise - every line should earn its place.
-- Document both what exists AND how to use it; call out "gotchas" explicitly.
-- Never include secrets or env var values - names only.
-- If documentation and reality disagree, favor reality.
+## Ground rules
 
-## Process
-
-1. Read the current CLAUDE.md at the repo root first.
-2. Systematically analyze the codebase (backend, frontend, site, infra, scripts,
-   tests, evals).
-3. Edit CLAUDE.md to reflect the true state of the project, verifying every path,
-   command, and version you write.
+- Never write secrets or env var values - names only.
+- Use single hyphens, never em dashes. No emojis.
+- Favor reality (the code) over stale documentation, always.

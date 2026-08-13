@@ -65,3 +65,9 @@ redisvl>=0.3
 # Local-mode fallbacks (only loaded when MODE=local)
 faiss-cpu>=1.8; sys_platform != 'win32'
 faster-whisper>=1.0; sys_platform != 'win32'
+
+# Added 2026-07-15 after an import audit (imported in code but previously undeclared).
+# Re-pin via `uv pip compile requirements.in -o requirements.txt`.
+chainlit>=1.1              # chainlit_app.py
+azure-ai-projects>=1.0.0b6 # agents/run_eval.py (AIProjectClient)
+typing-extensions>=4.12    # agents/hierarchical_graph.py (TypedDict fallback)

@@ -1,0 +1,79 @@
+.schemaFlowPanel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.section {
+  border: 1px solid var(--colorNeutralStroke2);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.sectionSuccess {
+  border-color: #4ade80;
+  background-color: rgba(74, 222, 128, 0.05);
+}
+
+.sectionError {
+  border-color: #f87171;
+  background-color: rgba(248, 113, 113, 0.05);
+}
+
+.sectionHeader {
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.sectionToggle {
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.jsonView {
+  font-size: 11px;
+  white-space: pre-wrap;
+  margin: 0;
+  font-family: "JetBrains Mono", monospace;
+  overflow-x: auto;
+}
+
+.dryRunStatement {
+  margin-bottom: 6px;
+  padding: 6px;
+  border-left: 3px solid;
+  border-radius: 2px;
+}
+
+.dryRunSuccess {
+  border-left-color: #4ade80;
+  background-color: rgba(74, 222, 128, 0.08);
+}
+
+.dryRunError {
+  border-left-color: #f87171;
+  background-color: rgba(248, 113, 113, 0.08);
+}
+
+.dryRunCode {
+  display: block;
+  white-space: pre-wrap;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  margin-bottom: 4px;
+}
+
+.groundingConfirmed {
+  color: #4ade80;
+  margin-bottom: 2px;
+}
+
+.groundingUnsupported {
+  color: #f87171;
+  margin-bottom: 2px;
+}

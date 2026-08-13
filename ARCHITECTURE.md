@@ -28,15 +28,22 @@ Quart backend (async, Gunicorn + uvloop worker, Container Apps)
    +-- Azure Document Intelligence (PDF layout/OCR)                 [optional/code]
    +-- Azure Speech / Voice Live (long-form + diarization)          [optional/code]
    +-- Azure AI Content Safety + Azure AI Language (PII redaction)  [optional/code]
-   +-- Azure AI Search (ingestion-side indexer)                     [optional/code]
+   +-- Azure AI Search (hybrid retriever + ingestion index)  [optional/gated infra]
    +-- Redis (semantic + embedding cache; no-op when REDIS_URL unset)[optional/code]
    +-- LangSmith (tracing)                                          [optional/code]
 ```
 
-Note: `DOCUMENT_RETRIEVER` selects the retrieval backend. The deployed container sets
-`cosmos` (Cosmos NoSQL vector store); local dev defaults to `redis_notes` (Redis-backed
-notes store). Azure AI Search appears in the ingestion pipeline (`prepdocslib/`) but is
-not a runtime retrieval backend.
+Note: `DOCUMENT_RETRIEVER` selects the retrieval backend. Three are registered
+(`core/document_retriever.py`): `cosmos` (Cosmos NoSQL vector store, deployed),
+`redis_notes` (Redis-backed notes store, local dev default), and `azure_search`
+(`core/azure_search_retriever.py`, hybrid BM25 + vector with optional semantic rerank).
+The Search service itself is composed into `infra/main.bicep` behind `useAzureSearch`
+(default `false`), so no Search resource is provisioned or billed until flipped.
+
+Active direction (see `STATUS.md`): local Obsidian-vault RAG with local models via
+Ollama (`MODE=local` routes chat through `agents/_llm.py`; vault ingestion via
+`prepdocslib/obsidianstrategy.py` is done, a dedicated `obsidian` retriever and Ollama
+embedding routing are open items).
 
 ## Main components
 
@@ -50,18 +57,26 @@ Routes (see `app.py`): `/chat` and `/chat/nonstream`, `/sql/plan`, `/papers/uplo
 exists but is not part of the Quart app.
 
 - **approaches/** - request orchestration. `multiagent_approach.py` runs the streaming
-  Router -> Retriever -> Answerer -> Verifier loop; `chatreadretrieveread.py` is the
-  classic retrieve-then-read path; `sql_schemaflow_approach.py` is the SQL planner;
-  `promptmanager.py` loads Jinja2 prompts from `approaches/prompts/`.
+  Router -> Retriever -> Answerer -> Verifier loop; `hierarchical_multiagent_approach.py`
+  is an opt-in supervisor/teams alternative (`USE_HIERARCHICAL_AGENTS=true`, identical
+  SSE schema); `chatreadretrieveread.py` is the classic retrieve-then-read path;
+  `sql_schemaflow_approach.py` is the SQL planner; `promptmanager.py` loads Jinja2
+  prompts from `approaches/prompts/`.
 - **agents/** - LangGraph nodes and tools: `router.py`, `retriever.py`, `answerer.py`,
   `verifier.py`, `sql_schemaflow.py`, `followups.py`, `tools.py`, `graph.py`, plus
+  `hierarchical_graph.py` + `skills.py` + `_chat_model.py` (hierarchical teams),
+  `tutor_agent.py` + `notes_search_tool.py` (Chainlit tutor path), `_llm.py`
+  (env-routed Azure/OpenAI/Ollama client), `run_eval.py` (Foundry evaluators), and
   `foundry_client.py` for hosted Azure AI Foundry agents.
 - **graphrag/** - live knowledge graph over Cosmos Gremlin: `entity_extractor.py`,
   `indexer.py`, `retriever.py`, `community.py` (community summaries), `cosmos_gremlin.py`.
 - **prepdocslib/** - ingestion pipeline: parsers (`pdfparser`, `htmlparser`, `csvparser`,
-  `jsonparser`, `textparser`, `youtubeparser`), `figureprocessor` + `mediadescriber`,
-  `textsplitter` (sentence-aware), `embeddings`, `searchmanager`, and strategy modules
-  (`filestrategy`, `integratedvectorizerstrategy`, `cloudingestionstrategy`).
+  `jsonparser`, `textparser`, `youtubeparser`, `learndocparser`), `figureprocessor` +
+  `mediadescriber`, `textsplitter` (sentence-aware), `embeddings`, index writers
+  (`cosmoswriter` for Cosmos NoSQL - the deployed store - and `searchmanager` +
+  `servicesetup` for AI Search), and strategy modules (`filestrategy`,
+  `integratedvectorizerstrategy`, `cloudingestionstrategy`, `learnstrategy`,
+  `obsidianstrategy`) selected via `prepdocs.py --source files|learn|obsidian`.
 - **voice/** - `speech_client.py`, `diarizer.py`, `audio_uploader.py`,
   `transcript_cleaner.py`, `voice_live.py`.
 - **safety/** - `content_safety.py` (inference-time prompt/completion filtering),
@@ -89,9 +104,12 @@ Bicep, deployed with `azd` per `azure.yaml`. `main.bicep` is a Stage-1 deploy th
 provisions only compute/observability (Log Analytics, Application Insights, ACR,
 Container Apps environment, backend Container App) and Entra ID role assignments
 (`infra/app/rbac.bicep`), wiring the backend by managed identity to the pre-existing
-`ai-tutor` Foundry, Cosmos, Blob, and Key Vault. Additional modules under `infra/core/`
-(ai, search, storage, cosmos, host, monitor, security) exist for optional services but
-are not currently composed into `main.bicep`.
+`ai-tutor` Foundry, Cosmos, Blob, and Key Vault. Azure AI Search
+(`infra/core/search/search-services.bicep`, keyless-only) is composed into `main.bicep`
+behind `useAzureSearch` (default `false`); env wiring, RBAC, and the `documentRetriever`
+param are in place for when it is flipped. Other modules under `infra/core/` (ai,
+storage, cosmos, host, monitor, security) exist for optional services but are not
+composed into `main.bicep`.
 
 ## Data flow
 
@@ -130,13 +148,16 @@ vector store (`core/cosmos_vector_retriever.py`) in the deployment, or a Redis-b
 notes store locally. OpenAI file_search optionally holds citation-grade spans. Cosmos
 NoSQL owns chat history (`chat_history/cosmosdb.py`); Cosmos Gremlin optionally owns the
 knowledge graph. Redis, when `REDIS_URL` is set, is ephemeral semantic/embedding cache
-(never source of truth). Azure AI Search appears in the ingestion pipeline
-(`prepdocslib/searchmanager.py`) but is not the runtime retrieval backend. Blob / ADLS
+(never source of truth). Azure AI Search has both an ingestion writer
+(`prepdocslib/searchmanager.py`) and a runtime retriever
+(`core/azure_search_retriever.py`), but the service is gated off in infra
+(`useAzureSearch=false`) so it is not the deployed retrieval backend. Blob / ADLS
 Gen2 holds raw and processed files.
 
 ## Key technologies
-- **Backend:** Python 3.11, Quart, Gunicorn + uvloop, `uv` for deps, OpenAI Responses API,
-  LangGraph + LangSmith, OpenTelemetry, Microsoft GraphRAG, Azure SDKs.
+- **Backend:** Python 3.11-3.12, Quart, Gunicorn + uvloop, `uv` for deps, OpenAI Responses
+  API, LangGraph + LangSmith, OpenTelemetry, Microsoft GraphRAG, Azure SDKs, Chainlit
+  (alternate tutor UI).
 - **Frontend:** React 19, TypeScript, Vite 5, Fluent UI v9, React Query, zustand, react-pdf.
 - **Infra/observability:** Bicep + azd, Azure Container Apps, Application Insights,
   LangSmith Cloud.
