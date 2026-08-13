@@ -227,9 +227,9 @@ multimodal_rag_application/
 │   ├── hierarchical_agent_teams_template.ipynb
 │   └── images/
 │
-├── data/{papers,audio,graphs,learn}/       # learn/ holds fetched MS Learn pages + seed URL lists
-└── .github/workflows/{pages,update-claude-md}.yml + claude-md-review-prompt.md
-                                            # (only these exist; no azure-dev/tests/eval workflows yet)
+├── data/{papers,audio,graphs}/
+├── .devcontainer/{devcontainer.json,Dockerfile,docker-compose.yml,post-create.sh}
+└── .github/workflows/{pages,update-claude-md,self-document}.yml   # (no azure-dev/tests/eval workflows yet)
 ```
 
 ---
@@ -536,12 +536,7 @@ Backend: `approaches/multiagent_approach.py` reads from `overrides`; expose via 
 - **Redact bodies:** `TRACELOOP_TRACE_CONTENT=false`.
 - **Cost meter:** `core/costmeter.py` tracks per-session input/output tokens; surfaced in `/chat` `cost` SSE event.
 - **Dashboard:** `azd monitor`.
-- **CI / CD:** 
-  - `pages.yml` - deploys static portfolio site to GitHub Pages whenever `site/` changes
-  - `update-claude-md.yml` - auto-syncs CLAUDE.md with codebase on push/schedule
-  - `self-document.yml` - runs self-documenting agent to update STATUS.md and ADRs
-  - Backend deployment: manual `azd up` to Azure Container Apps (no automated CI yet)
-  - Frontend: included in backend Docker image; docker-compose for local dev includes both services
+- **CI:** GitHub Actions workflows present are `pages.yml` (portfolio deploy), `update-claude-md.yml` (weekly CLAUDE.md sync), and `self-document.yml` (runs the `.claude/agents/self-documenter.md` agent on push/schedule to sync STATUS.md + project markdown + ADRs, opening a PR). There is no test/eval CI workflow yet; run `pytest` and the eval scripts locally.
 
 ---
 
