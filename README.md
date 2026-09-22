@@ -205,7 +205,7 @@ This repository keeps its own documentation current on a fixed loop:
 
 - End of every working session: CLAUDE.md, this README, the requirements manifests (`app/backend/requirements.in` and `.txt`, `evals/requirements.txt`, `app/functions/requirements.txt`), and any affected prep docs are updated to match reality.
 - Every Monday at 09:00 UTC: the GitHub Actions workflow [`update-claude-md.yml`](.github/workflows/update-claude-md.yml) runs Claude Code with the prompt in [`claude-md-review-prompt.md`](.github/workflows/claude-md-review-prompt.md). It verifies CLAUDE.md and this README against the code, checks the requirements manifests (`app/backend/requirements.in` and `.txt`, `evals/requirements.txt`, `app/functions/requirements.txt`) against actual imports, regenerates the prioritized [TODO.md](TODO.md), and opens a pull request with any corrections. It can also be triggered manually from the Actions tab.
-- The workflow requires the `CLAUDE_CODE_OAUTH_TOKEN` repository secret (generate with `claude setup-token`).
+- The workflow requires either the `ANTHROPIC_API_KEY` repository secret or the `CLAUDE_CODE_OAUTH_TOKEN` repository secret (generate the OAuth token with `claude setup-token`).
 
 ## Supporting documentation
 
