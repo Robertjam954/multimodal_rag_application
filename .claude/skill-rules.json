@@ -25,6 +25,16 @@
         "pathPatterns": ["data/**", "**/*.csv", "**/*eda*.py", "**/exploratory*/**"],
         "intentPatterns": ["(?:load|merge|join|clean|audit|analyze).*(?:data|dataset|table|cohort)", "(?:run|do|start).*(?:eda|analysis|table 1)"]
       }
+    },
+    "oauth1-auth": {
+      "description": "OAuth 1.0 / 1.0a (RFC 5849): sign requests, run the three-legged flow, verify signatures, debug 401 invalid-signature errors. Not for OAuth 2.0 / Entra ID.",
+      "priority": 7,
+      "triggers": {
+        "keywords": ["oauth 1.0", "oauth1", "oauth 1.0a", "rfc 5849", "oauth_signature", "oauth_nonce", "consumer key", "consumer secret", "request token", "hmac-sha1"],
+        "keywordPatterns": ["\\boauth[ _-]?1(?:\\.0a?)?\\b", "\\boauth_(?:signature|nonce|timestamp|token|verifier|callback)\\b"],
+        "pathPatterns": ["**/*oauth1*.py", "**/*oauth1*"],
+        "intentPatterns": ["(?:sign|authenticate|authorize|verify|debug).*(?:oauth ?1|oauth_signature|request token)"]
+      }
     }
   }
 }
