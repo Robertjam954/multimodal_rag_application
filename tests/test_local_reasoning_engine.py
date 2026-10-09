@@ -3,10 +3,9 @@ from __future__ import annotations
 import sys
 import types
 
-import pytest
-
 import local_reasoning_engine
 import local_reasoning_server
+import pytest
 
 
 def install_fake_vertex(monkeypatch):

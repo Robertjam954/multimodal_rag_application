@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import argparse
 import os
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Callable, Sequence
+from typing import Any
 
 DEFAULT_LOCATION = "us-central1"
 DEFAULT_MODEL = "gemini-1.5-pro"

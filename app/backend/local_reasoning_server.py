@@ -3,10 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from local_reasoning_engine import query_local_orchestrator
 from pydantic import BaseModel, ValidationError
 from quart import Quart, jsonify, request
-
-from local_reasoning_engine import query_local_orchestrator
 
 app = Quart(__name__)
 
