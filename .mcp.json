@@ -5,9 +5,9 @@
       "args": ["-m", "oauth1_mcp.server"],
       "env": {
         "PYTHONPATH": "${HOME}/Projects/oauth1-mcp",
-        "OAUTH1_CLIENT_KEY": "${OAUTH1_CLIENT_KEY:-}",
-        "OAUTH1_CLIENT_SECRET": "${OAUTH1_CLIENT_SECRET:-}",
-        "OAUTH1_ALLOWED_HOSTS": "${OAUTH1_ALLOWED_HOSTS:-}"
+        "OAUTH1_CLIENT_KEY": "${OAUTH1_CLIENT_KEY}",
+        "OAUTH1_CLIENT_SECRET": "${OAUTH1_CLIENT_SECRET}",
+        "OAUTH1_ALLOWED_HOSTS": "${OAUTH1_ALLOWED_HOSTS}"
       }
     }
   }
