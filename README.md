@@ -178,6 +178,14 @@ python scripts/seed_graph.py              # seed the Gremlin graph
 
 # Chainlit tutor UI
 cd app/backend && chainlit run chainlit_app.py --host 0.0.0.0 --port 8000
+
+# Local Vertex reasoning-engine runner (Decision 1: in-memory execution)
+gcloud auth application-default login
+export GOOGLE_CLOUD_PROJECT=<your-gcp-project-id>
+cd app/backend && python local_reasoning_engine.py --prompt "What was our Q3 revenue growth and how does it compare to the industry?"
+
+# Local Vertex reasoning-engine HTTP simulator (Decision 2: local API server)
+cd app/backend && quart --app local_reasoning_server:app run --port 8080
 ```
 
 ### Testing the deployment
@@ -198,6 +206,8 @@ python evals/safety_evaluation.py --target_url http://localhost:50505/chat
 ```
 
 For a deployed app, open the Container App URL and ask a question on the chat page; verify SSE events arrive and citations resolve.
+
+For local Vertex reasoning-engine testing, use Application Default Credentials (`gcloud auth application-default login`) and set `GOOGLE_CLOUD_PROJECT`. The in-memory runner only uses local mock tools plus Vertex-hosted Gemini inference, and the `/predict` simulator stays entirely local apart from Gemini calls.
 
 ## Automated self-documentation
 

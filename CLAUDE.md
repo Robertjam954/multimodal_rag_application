@@ -40,6 +40,7 @@ The architecture borrows patterns from [Azure-Samples/azure-search-openai-demo](
 - **Dependency manager:** `uv` (`uv pip compile requirements.in -o requirements.txt`).
 - **Azure SDKs:** `azure-identity`, `azure-search-documents` (knowledgebases preview), `azure-ai-documentintelligence`, `azure-cognitiveservices-speech`, `azure-storage-blob`, `azure-cosmos`, `azure-monitor-opentelemetry`, `azure-ai-contentsafety`, `azure-ai-language` (PII redaction).
 - **OpenAI / Foundry:** `openai >= 1.50` (Responses API for `file_search`), `AzureOpenAI` for hosted deployments. Reasoning models (o-series) supported via `reasoning_effort` overrides.
+- **Optional local Vertex tooling:** `google-cloud-aiplatform` powers `local_reasoning_engine.py` and `local_reasoning_server.py` for local-only Gemini-backed reasoning-engine experiments.
 - **Agent orchestration:** LangGraph in-process; LangSmith captures every node + tool span. Azure AI Foundry Agent Service used for hosted agents when latency tolerates it.
 - **GraphRAG:** Microsoft `graphrag` package for offline indexing; Cosmos DB Gremlin API for live graph CRUD; community summaries refreshed via `graphrag/community.py`.
 - **Tracing:** `langsmith` + OpenTelemetry (`opentelemetry-instrumentation-openai`, `-httpx`, `-asgi`, `-aiohttp-client`) -> Azure Monitor + LangSmith Cloud.
@@ -115,6 +116,7 @@ multimodal_rag_application/
 │   ├── backend/
 │   │   ├── Dockerfile gunicorn.conf.py custom_uvicorn_worker.py
 │   │   ├── app.py main.py config.py decorators.py error.py
+│   │   ├── local_reasoning_engine.py local_reasoning_server.py
 │   │   ├── chainlit_app.py chainlit.md     # Chainlit tutor UI (alternate frontend)
 │   │   ├── youtube_service.py              # URL<->id helpers + optional Data API metadata
 │   │   ├── load_azd_env.py
@@ -354,10 +356,19 @@ cd app/frontend && npm install && npm run dev
 
 # Chainlit tutor UI (alternate chat frontend, port 8000)
 cd app/backend && chainlit run chainlit_app.py --host 0.0.0.0 --port 8000
+
+# Local Vertex reasoning-engine runner (Decision 1: in-memory execution)
+gcloud auth application-default login
+export GOOGLE_CLOUD_PROJECT=<your-gcp-project-id>
+cd app/backend && python local_reasoning_engine.py --prompt "What was our Q3 revenue growth and how does it compare to the industry?"
+
+# Local Vertex reasoning-engine HTTP simulator (Decision 2: local API server)
+cd app/backend && quart --app local_reasoning_server:app run --port 8080
 ```
 
 ### Local-only mode (no Azure)
 Set `MODE=local` to swap AOAI for Ollama, Speech for faster-whisper, Search for FAISS, and Cosmos for SQLite. Useful for contributors without Azure. See `docs/localdev.md`.
+For Gemini-backed local reasoning-engine experiments, use `gcloud auth application-default login`, set `GOOGLE_CLOUD_PROJECT`, and run `app/backend/local_reasoning_engine.py` or `app/backend/local_reasoning_server.py`; the orchestration and tool execution stay local while inference goes to Vertex AI.
 
 ### Tests
 ```bash
@@ -446,6 +457,7 @@ Key vars (note: many below belong to optional/off features; the deployed env is 
 | `USE_FEEDBACK` | Feedback widget + endpoint |
 | `USE_LOCAL_MODE` / `MODE=local` | local-model swap; `MODE=local` routes chat to Ollama via `agents/_llm.py` |
 | `OLLAMA_BASE_URL` `OLLAMA_EMBED_MODEL` | Ollama OpenAI-compatible endpoint + embedding model (default `nomic-embed-text`) |
+| `GOOGLE_CLOUD_PROJECT` `GOOGLE_CLOUD_LOCATION` | local-only Vertex AI reasoning-engine helpers in `local_reasoning_engine.py` / `local_reasoning_server.py` |
 | `OBSIDIAN_VAULT_PATH` `OBSIDIAN_CATEGORY` | Obsidian vault ingestion (`prepdocs.py --source obsidian`) |
 | `YOUTUBE_API_KEY` | optional YouTube Data API metadata in `youtube_service.py` (stub without it) |
 | `USE_EVAL` `USE_AI_PROJECT` | Provisions eval model + Foundry project |
