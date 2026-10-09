@@ -178,6 +178,14 @@ python scripts/seed_graph.py              # seed the Gremlin graph
 
 # Chainlit tutor UI
 cd app/backend && chainlit run chainlit_app.py --host 0.0.0.0 --port 8000
+
+# Local Vertex reasoning-engine runner (Decision 1: in-memory execution)
+gcloud auth application-default login
+export GOOGLE_CLOUD_PROJECT=<your-gcp-project-id>
+cd app/backend && python local_reasoning_engine.py --prompt "What was our Q3 revenue growth and how does it compare to the industry?"
+
+# Local Vertex reasoning-engine HTTP simulator (Decision 2: local API server)
+cd app/backend && quart --app local_reasoning_server:app run --port 8080
 ```
 
 ### Testing the deployment
@@ -199,13 +207,15 @@ python evals/safety_evaluation.py --target_url http://localhost:50505/chat
 
 For a deployed app, open the Container App URL and ask a question on the chat page; verify SSE events arrive and citations resolve.
 
+For local Vertex reasoning-engine testing, use Application Default Credentials (`gcloud auth application-default login`) and set `GOOGLE_CLOUD_PROJECT`. The in-memory runner only uses local mock tools plus Vertex-hosted Gemini inference, and the `/predict` simulator stays entirely local apart from Gemini calls.
+
 ## Automated self-documentation
 
 This repository keeps its own documentation current on a fixed loop:
 
 - End of every working session: CLAUDE.md, this README, the requirements manifests (`app/backend/requirements.in` and `.txt`, `evals/requirements.txt`, `app/functions/requirements.txt`), and any affected prep docs are updated to match reality.
 - Every Monday at 09:00 UTC: the GitHub Actions workflow [`update-claude-md.yml`](.github/workflows/update-claude-md.yml) runs Claude Code with the prompt in [`claude-md-review-prompt.md`](.github/workflows/claude-md-review-prompt.md). It verifies CLAUDE.md and this README against the code, checks the requirements manifests (`app/backend/requirements.in` and `.txt`, `evals/requirements.txt`, `app/functions/requirements.txt`) against actual imports, regenerates the prioritized [TODO.md](TODO.md), and opens a pull request with any corrections. It can also be triggered manually from the Actions tab.
-- The workflow requires the `CLAUDE_CODE_OAUTH_TOKEN` repository secret (generate with `claude setup-token`).
+- The workflow requires either the `ANTHROPIC_API_KEY` repository secret or the `CLAUDE_CODE_OAUTH_TOKEN` repository secret (generate the OAuth token with `claude setup-token`).
 
 ## Supporting documentation
 

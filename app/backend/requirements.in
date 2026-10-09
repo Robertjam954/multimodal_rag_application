@@ -57,6 +57,7 @@ aiosqlite>=0.20
 youtube-transcript-api>=0.6
 fastmcp>=0.4
 google-api-python-client>=2.118  # optional - YouTube Data API metadata
+google-cloud-aiplatform>=2.4.0   # optional - local Vertex AI reasoning-engine demo
 
 # Semantic cache + embedding cache (Redis Stack)
 redis[hiredis]>=5.0

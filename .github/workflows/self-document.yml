@@ -74,8 +74,9 @@ jobs:
       - name: Run self-documenter agent
         uses: anthropics/claude-code-action@beta
         with:
-          # OAuth token for a Claude subscription (same secret as update-claude-md.yml).
-          # Generate locally with `claude setup-token`, then add repo secret CLAUDE_CODE_OAUTH_TOKEN.
+          # Provide either the shared direct API key or a Claude Code OAuth token.
+          # The action only needs one of these secrets to be present.
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           mode: agent
           direct_prompt: |
