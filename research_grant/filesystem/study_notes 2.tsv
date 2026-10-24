@@ -1,0 +1,14 @@
+field	value	scope_or_unit
+data_origin	fully_simulated	benchmark disclosure
+represents_real_people_or_samples	false	benchmark disclosure
+count_semantics	ref_reads and alt_reads are uniquely mapped, deduplicated reads carrying the reference and the alternate allele at the locus, for the probe on that row; a locus captured by more than one probe has one row per probe	plasma counts
+sample_semantics	the sequenced material is maternal plasma cell-free DNA, which carries molecules from the mother and from the pregnancy	plasma counts
+genotype_semantics	mother_alt_dosage and father_alt_dosage are the number of alternate alleles recorded for that parent at the locus, 0, 1 or 2, from genotyping of parental genomic DNA	parental genotypes
+missing_genotype_code	-1	the genotype was not called at this locus; it is not a dosage
+batch_semantics	the genotyping batch the locus was assayed in	parental genotypes
+identifier_semantics	identifiers match across files ignoring letter case and surrounding whitespace	all files
+locus_class_semantics	snp is a panel marker; candidate_variant is a pathogenic variant the father carries and the panel reports on	locus panel
+min_depth	1500	reads at a locus, both alleles together, below which the locus was not called in validation
+panel_qc_semantics	loci in panel_qc.tsv.gz carry artefactual alternate reads in every sample regardless of genotype	locus panel
+evidence_margin	2.0	log10 likelihood ratio of the best supported origin of a candidate variant's alternate reads over the next best, below which the locus is reported as inconclusive rather than assigned
+fit_min_p	0.001	two-sided binomial probability of a candidate variant's alternate read count under the origin assigned to it, below which the locus is reported as inconclusive rather than assigned

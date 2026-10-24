@@ -1,0 +1,65 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - run: pip install -r requirements-dev.txt
+
+      - name: Type check
+        run: mypy src/ --strict
+
+      - name: Lint
+        run: ruff check src/ eval/ tests/
+
+      - name: Format check
+        run: black --check src/ eval/ tests/
+
+      - name: Tests
+        run: pytest tests/ --cov=src --cov-report=term-missing
+
+      - name: Coverage gate
+        run: coverage report --fail-under=80
+
+  # Guards the experiment's validity, not its code quality. Shared infrastructure -
+  # frozen prompts, the task set, retrieval config - cannot change without an ADR,
+  # because doing so silently invalidates every cross-arm comparison (ADR-0003).
+  frozen-artifacts:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail if a frozen artifact changed without an ADR
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD)
+
+          FROZEN=$(echo "$CHANGED" | grep -E '^(src/prompts/(registry\.json|library/)|eval/tasks/|docs/experiment_metadata\.md)' || true)
+          if [ -z "$FROZEN" ]; then
+            echo "No frozen artifacts touched."
+            exit 0
+          fi
+
+          echo "Frozen artifacts changed:"
+          echo "$FROZEN"
+
+          NEW_ADR=$(echo "$CHANGED" | grep -E '^docs/adr/[0-9]{4}-.*\.md$' || true)
+          if [ -z "$NEW_ADR" ]; then
+            echo ""
+            echo "FAIL: a frozen artifact changed with no accompanying ADR."
+            echo "See ADR-0003 (benchmark protocol) and ADR-0006 (prompt freezing)."
+            echo "Add docs/adr/NNNN-*.md stating the decision and the re-run scope."
+            exit 1
+          fi
+          echo "Accompanying ADR found: $NEW_ADR"

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/aim1_result_tables.schema.json",
+  "title": "Aim 1 staged result tables",
+  "description": "Schema contract for JSON record arrays staged by stage_aim1_result_tables.py.",
+  "$defs": {
+    "univariate_logistic_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "feature", "n", "n_mutated", "or", "or_lo", "or_hi", "coef", "se", "p", "note", "q_bh"],
+      "properties": {
+        "kind": {"enum": ["gene", "pathway"]},
+        "feature": {"type": "string", "minLength": 1},
+        "n": {"type": "integer", "minimum": 0},
+        "n_mutated": {"type": "integer", "minimum": 0},
+        "or": {"type": "number"},
+        "or_lo": {"type": "number"},
+        "or_hi": {"type": "number"},
+        "coef": {"type": "number"},
+        "se": {"type": "number", "minimum": 0},
+        "p": {"type": "number", "minimum": 0, "maximum": 1},
+        "note": {"type": ["string", "null"]},
+        "q_bh": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "univariate_logistic_array": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/univariate_logistic_record"}
+    },
+    "prevalence_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "n_brain_met", "n_no_brain_met", "mut_brain_met", "mut_no_brain_met", "prev_brain_met", "prev_no_brain_met", "prev_ratio", "pr_lo", "pr_hi", "odds_ratio", "fisher_p", "p_holm", "q_bh"],
+      "properties": {
+        "feature": {"type": "string", "minLength": 1},
+        "n_brain_met": {"type": "integer", "minimum": 0},
+        "n_no_brain_met": {"type": "integer", "minimum": 0},
+        "mut_brain_met": {"type": "integer", "minimum": 0},
+        "mut_no_brain_met": {"type": "integer", "minimum": 0},
+        "prev_brain_met": {"type": "number", "minimum": 0, "maximum": 1},
+        "prev_no_brain_met": {"type": "number", "minimum": 0, "maximum": 1},
+        "prev_ratio": {"type": "number", "minimum": 0},
+        "pr_lo": {"type": "number", "minimum": 0},
+        "pr_hi": {"type": "number", "minimum": 0},
+        "odds_ratio": {"type": "number", "minimum": 0},
+        "fisher_p": {"type": "number", "minimum": 0, "maximum": 1},
+        "p_holm": {"type": "number", "minimum": 0, "maximum": 1},
+        "q_bh": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "prevalence_array": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/prevalence_record"}
+    },
+    "multivariate_logistic_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "or", "or_lo", "or_hi", "coef", "se", "p"],
+      "properties": {
+        "feature": {"type": "string", "minLength": 1},
+        "or": {"type": "number"},
+        "or_lo": {"type": "number"},
+        "or_hi": {"type": "number"},
+        "coef": {"type": "number"},
+        "se": {"type": "number", "minimum": 0},
+        "p": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "multivariate_logistic_array": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/multivariate_logistic_record"}
+    },
+    "gene_pathway_comparison_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "feature", "n_brain_met", "n_no_brain_met", "count_brain_met_mut", "count_no_brain_met_mut", "prev_brain_met", "prev_no_brain_met", "prev_ratio", "pr_lo", "pr_hi", "fisher_p", "p_holm", "p_bh"],
+      "properties": {
+        "kind": {"enum": ["gene", "pathway"]},
+        "feature": {"type": "string", "minLength": 1},
+        "n_brain_met": {"type": "integer", "minimum": 0},
+        "n_no_brain_met": {"type": "integer", "minimum": 0},
+        "count_brain_met_mut": {"type": "integer", "minimum": 0},
+        "count_no_brain_met_mut": {"type": "integer", "minimum": 0},
+        "prev_brain_met": {"type": "number", "minimum": 0, "maximum": 1},
+        "prev_no_brain_met": {"type": "number", "minimum": 0, "maximum": 1},
+        "prev_ratio": {"type": "number", "minimum": 0},
+        "pr_lo": {"type": "number", "minimum": 0},
+        "pr_hi": {"type": "number", "minimum": 0},
+        "fisher_p": {"type": "number", "minimum": 0, "maximum": 1},
+        "p_holm": {"type": "number", "minimum": 0, "maximum": 1},
+        "p_bh": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "gene_pathway_comparison_array": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/gene_pathway_comparison_record"}
+    }
+  },
+  "anyOf": [
+    {
+      "type": "array",
+      "items": {"$ref": "#/$defs/univariate_logistic_record"}
+    },
+    {
+      "type": "array",
+      "items": {"$ref": "#/$defs/prevalence_record"}
+    },
+    {
+      "type": "array",
+      "items": {"$ref": "#/$defs/multivariate_logistic_record"}
+    },
+    {
+      "type": "array",
+      "items": {"$ref": "#/$defs/gene_pathway_comparison_record"}
+    }
+  ]
+}

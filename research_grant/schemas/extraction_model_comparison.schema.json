@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/extraction_model_comparison.schema.json",
+  "title": "BRCA three-model extraction comparison summary",
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "feature_accuracy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "source_confirmed_features", "exact_matches", "accuracy"],
+      "properties": {
+        "model_id": {"type": "string", "minLength": 1},
+        "source_confirmed_features": {"type": "integer", "minimum": 1},
+        "exact_matches": {"type": "integer", "minimum": 0},
+        "accuracy": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "case_accuracy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id",
+        "independent_units",
+        "all_applicable_checks_exact",
+        "accuracy",
+        "ci_method",
+        "ci_level",
+        "ci_low",
+        "ci_high"
+      ],
+      "properties": {
+        "model_id": {"type": "string", "minLength": 1},
+        "independent_units": {"type": "integer", "minimum": 1},
+        "all_applicable_checks_exact": {"type": "integer", "minimum": 0},
+        "accuracy": {"type": "number", "minimum": 0, "maximum": 1},
+        "ci_method": {"const": "agresti_coull"},
+        "ci_level": {"const": 0.95},
+        "ci_low": {"type": "number", "minimum": 0, "maximum": 1},
+        "ci_high": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "stage_case_accuracy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "case_units", "all_applicable_checks_exact", "accuracy", "stage"],
+      "properties": {
+        "model_id": {"type": "string", "minLength": 1},
+        "case_units": {"type": "integer", "minimum": 1},
+        "all_applicable_checks_exact": {"type": "integer", "minimum": 0},
+        "accuracy": {"type": "number", "minimum": 0, "maximum": 1},
+        "stage": {"type": "string", "minLength": 1}
+      }
+    },
+    "stage_element_feature_accuracy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id",
+        "source_confirmed_features",
+        "exact_matches",
+        "accuracy",
+        "stage",
+        "element"
+      ],
+      "properties": {
+        "model_id": {"type": "string", "minLength": 1},
+        "source_confirmed_features": {"type": "integer", "minimum": 1},
+        "exact_matches": {"type": "integer", "minimum": 0},
+        "accuracy": {"type": "number", "minimum": 0, "maximum": 1},
+        "stage": {"type": "string", "minLength": 1},
+        "element": {"type": "string", "minLength": 1}
+      }
+    },
+    "overall_mcnemar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_a",
+        "model_b",
+        "scope",
+        "stage",
+        "element",
+        "independent_units",
+        "both_correct",
+        "model_a_only_correct",
+        "model_b_only_correct",
+        "both_incorrect",
+        "discordant_units",
+        "test",
+        "statistic",
+        "p_value",
+        "q_bh"
+      ],
+      "properties": {
+        "model_a": {"type": "string", "minLength": 1},
+        "model_b": {"type": "string", "minLength": 1},
+        "scope": {"const": "overall_case"},
+        "stage": {"type": "null"},
+        "element": {"type": "null"},
+        "independent_units": {"type": "integer", "minimum": 1},
+        "both_correct": {"type": "integer", "minimum": 0},
+        "model_a_only_correct": {"type": "integer", "minimum": 0},
+        "model_b_only_correct": {"type": "integer", "minimum": 0},
+        "both_incorrect": {"type": "integer", "minimum": 0},
+        "discordant_units": {"type": "integer", "minimum": 0},
+        "test": {"enum": ["mcnemar_exact_binomial", "mcnemar_chi_squared"]},
+        "statistic": {"type": "number", "minimum": 0},
+        "p_value": {"type": "number", "minimum": 0, "maximum": 1},
+        "q_bh": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "report_scope",
+    "golden_dataset_hash",
+    "model_input_payload_hashes",
+    "model_ids",
+    "overall_inference_unit",
+    "feature_accuracy_interpretation",
+    "confidence_interval",
+    "descriptive_feature_accuracy",
+    "overall_case_accuracy",
+    "stage_case_accuracy",
+    "stage_element_feature_accuracy",
+    "pairwise_mcnemar",
+    "figures"
+  ],
+  "properties": {
+    "schema_version": {"const": "brca_extraction_model_comparison.v2"},
+    "report_scope": {"const": "pre_benchmark_local_evaluation"},
+    "golden_dataset_hash": {"$ref": "#/$defs/sha256"},
+    "model_input_payload_hashes": {
+      "type": "object",
+      "minProperties": 3,
+      "maxProperties": 3,
+      "additionalProperties": {"$ref": "#/$defs/sha256"}
+    },
+    "model_ids": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "overall_inference_unit": {"const": "case; all source-confirmed numeric checks exact"},
+    "feature_accuracy_interpretation": {"const": "descriptive; feature checks are clustered within cases"},
+    "confidence_interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "level"],
+      "properties": {
+        "method": {"const": "agresti_coull"},
+        "level": {"const": 0.95}
+      }
+    },
+    "descriptive_feature_accuracy": {
+      "type": "array",
+      "minItems": 3,
+      "items": {"$ref": "#/$defs/feature_accuracy"}
+    },
+    "overall_case_accuracy": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/case_accuracy"}
+    },
+    "stage_case_accuracy": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/stage_case_accuracy"}
+    },
+    "stage_element_feature_accuracy": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/stage_element_feature_accuracy"}
+    },
+    "pairwise_mcnemar": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/overall_mcnemar"}
+    },
+    "figures": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

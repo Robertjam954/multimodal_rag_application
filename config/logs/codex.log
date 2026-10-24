@@ -1,0 +1,27 @@
+2026-10-09 04:11:06 | INFO     | Starting Codex v2.5.3
+2026-10-09 04:11:06 | INFO     | Ensuring database is correct and up to date...
+2026-10-09 04:11:12 | INFO     | Skipping non-comic Comic-row cleanup: no comic-suffix paths in the database to use as a stat sentinel.
+2026-10-09 04:11:12 | INFO     | Skipping phantom Comic-as-folder cleanup: no comic-suffix paths in the database to use as a stat sentinel.
+2026-10-09 04:11:14 | SUCCESS  | Database ready.
+2026-10-09 04:11:14 | SUCCESS  | Created admin user.
+2026-10-09 04:11:14 | INFO     | Created AdminFlag: Auto Update = True
+2026-10-09 04:11:14 | INFO     | Created AdminFlag: Banner Text = True
+2026-10-09 04:11:14 | INFO     | Created AdminFlag: Folder View = True
+2026-10-09 04:11:14 | INFO     | Created AdminFlag: Import Metadata = True
+2026-10-09 04:11:14 | INFO     | Created AdminFlag: Lazy Import Metadata = True
+2026-10-09 04:11:14 | INFO     | Created AdminFlag: Non Users = True
+2026-10-09 04:11:14 | INFO     | Created AdminFlag: Registration = True
+2026-10-09 04:11:14 | INFO     | Created AdminFlag: Register Verification = False
+2026-10-09 04:11:14 | INFO     | Created AdminFlag: Send Telemetry = True
+2026-10-09 04:11:14 | INFO     | Created 1 missing auth tokens for users.
+2026-10-09 04:11:14 | INFO     | Codex is being served without a url path prefix.
+2026-10-09 04:11:14 | WARNING  | doctor: CBR MISCONFIGURED: bsdtar can't extract RAR: 'unrar' not on path Fix: brew install rar
+2026-10-09 04:11:14 | WARNING  | doctor: rich WRONG VERSION: comicbox requires rich~=15.0 Fix: pip install 'rich~=15.0'
+2026-10-09 04:11:14 | WARNING  | The doctor found 2 problems. See the Admin Doctor tab.
+2026-10-09 04:11:14 | SUCCESS  | Running Codex v2.5.3
+2026-10-09 04:11:14 | SUCCESS  | BroadcastListener started.
+2026-10-09 04:11:17 | INFO     | LibrarianDaemon started all threads.
+2026-10-09 04:11:17 | SUCCESS  | LibrarianDaemon ready for tasks.
+2026-10-09 04:11:17 | INFO     | Looking for search entries to update since the fracturing of the multiverse...
+2026-10-09 04:11:17 | INFO     | Looking for missing search entries to create...
+2026-10-09 04:11:17 | SUCCESS  | Search index found to be already synced in a moment.

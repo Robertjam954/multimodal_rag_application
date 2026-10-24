@@ -1,0 +1,3 @@
+821667eeccead79c79c681e8d35ee859 gdac.broadinstitute.org_BRCA-TP.Correlate_Clinical_vs_Mutation.Level_4.2016012800.0.0.idf.txt
+de58799a71edc697aa30062a18019b14 gdac.broadinstitute.org_BRCA-TP.Correlate_Clinical_vs_Mutation.Level_4.2016012800.0.0.sdrf.txt
+534c6720272679f0314976388d691c78 gdac.broadinstitute.org_BRCA-TP.Correlate_Clinical_vs_Mutation.Level_4.2016012800.0.0.parameters.properties

@@ -1,0 +1,13 @@
+# ~/.config/systemd/user/refresh-docs.timer
+[Unit]
+Description=Run supervisor doc refresh at 05:30 ET (6am deadline with slack)
+
+[Timer]
+# IANA timezone at the end handles EST/EDT automatically.
+OnCalendar=*-*-* 05:30:00 America/New_York
+# If the machine was asleep at 05:30, run once on next wake instead of skipping.
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

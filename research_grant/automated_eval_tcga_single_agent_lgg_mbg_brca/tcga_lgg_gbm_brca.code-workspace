@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "copilot%2Fcreate-wiki",
+			"uri": "github-remote-file://github/Robertjam954/llm_summarizer_validation/copilot/create-wiki"
+		}
+	],
+	"settings": {
+		"editor.defaultFormatter": "paiqo.databricks-vscode"
+	}
+}

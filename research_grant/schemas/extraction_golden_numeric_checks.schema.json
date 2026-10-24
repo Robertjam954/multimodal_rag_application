@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/extraction_golden_numeric_checks.schema.json",
+  "title": "BRCA extraction golden numeric checks",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "checks"],
+  "properties": {
+    "schema_version": {
+      "const": "brca_extraction_golden_numeric_checks.v1"
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["case_id", "stage", "element", "source_present", "expected_value"],
+        "properties": {
+          "case_id": {"type": "string", "minLength": 1},
+          "stage": {"type": "string", "minLength": 1},
+          "element": {"type": "string", "minLength": 1},
+          "source_present": {"type": "boolean"},
+          "expected_value": {"type": ["number", "null"]}
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {"source_present": {"const": true}},
+              "required": ["source_present"]
+            },
+            "then": {
+              "properties": {"expected_value": {"type": "number"}}
+            },
+            "else": {
+              "properties": {"expected_value": {"type": "null"}}
+            }
+          }
+        ]
+      }
+    }
+  }
+}

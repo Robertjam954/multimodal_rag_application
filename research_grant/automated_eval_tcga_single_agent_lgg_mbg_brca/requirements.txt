@@ -1,0 +1,46 @@
+# Runtime dependencies.
+#
+# Python runtime dependencies.
+#
+# Current Python scripts import the packages below. They cover the cBioPortal snapshot
+# pull, retained local data-preparation and missingness scripts, the Stage 0 JSON
+# missingness normalizer, and the implemented three-model extraction-accuracy
+# comparison utility. The Stage 0 normalizer uses `jsonschema==4.26.0` for strict
+# Draft 2020-12 report validation. `statsmodels` supplies its Agresti-Coull interval,
+# McNemar, and multiple-testing functions. `jsonschema` also validates immutable golden
+# inputs, prediction payloads, and generated comparison summaries, and supports the
+# pull's Stage 0 report validation. All three JSON-producing or JSON-consuming Python
+# utilities reject duplicate keys and non-finite numeric input, including exponent
+# overflow, without requiring another third-party package.
+# Planned extraction, survival, retrieval, and benchmark packages are intentionally
+# absent.
+pandas==3.0.5
+numpy==2.4.6
+matplotlib==3.11.1
+statsmodels==0.14.6
+jsonschema==4.26.0
+#
+# This file also records the R packages required by the standalone workflow below; they
+# are not pip packages and therefore remain comments rather than invalid pip
+# requirement lines.
+#
+# R runtime dependencies for
+# data collection and processing/compare_tcga_lgg_gbm.R:
+# - TCGAbiolinks (Bioconductor)
+# - dplyr (CRAN)
+# - jsonlite (CRAN, serializes clinical list columns to deterministic JSON)
+# - readr (CRAN)
+# - rlang (CRAN, used as rlang::sym)
+# - tidyr (CRAN, used as tidyr::pivot_wider)
+#
+# Per CLAUDE.md section 8, this file declares the third-party imports of code that runs
+# today - never dependencies for (target) modules that do not import anything yet.
+# Declaring a package before its code exists widens the dependency surface for no
+# benefit and cannot be reviewed against real usage.
+#
+# The forward-looking Python dependency plan (Instructor, Pydantic, Pydantic Evals,
+# OpenAI, Chainlit, and retrieval libraries) is not a runtime dependency set. Add a
+# package here, pinned to an exact version, only in the change that first imports it.
+#
+# Pinning policy: exact pins (==) once added, because reproducing a benchmark run
+# requires reproducing its dependency tree (ADR-0003).

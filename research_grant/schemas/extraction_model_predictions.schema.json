@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/extraction_model_predictions.schema.json",
+  "title": "BRCA extraction model predictions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "model_id", "golden_dataset_hash", "predictions"],
+  "properties": {
+    "schema_version": {
+      "const": "brca_extraction_model_predictions.v1"
+    },
+    "model_id": {"type": "string", "minLength": 1},
+    "golden_dataset_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "predictions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["case_id", "stage", "element", "actual_value"],
+        "properties": {
+          "case_id": {"type": "string", "minLength": 1},
+          "stage": {"type": "string", "minLength": 1},
+          "element": {"type": "string", "minLength": 1},
+          "actual_value": {"type": ["number", "null"]}
+        }
+      }
+    }
+  }
+}

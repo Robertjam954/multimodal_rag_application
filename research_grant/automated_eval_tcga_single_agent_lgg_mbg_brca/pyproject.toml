@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tcga-deep-research-benchmark"
+version = "0.1.0"
+description = "Controlled benchmark: single ReAct agent vs multi-agent deep research over TCGA data"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain>=1.4.0",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "ARG"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "eval"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+# Ported analysis code and notebook-adjacent libraries ship without stubs.
+[[tool.mypy.overrides]]
+module = ["shap.*", "sqlite_vec.*", "deepeval.*", "chainlit.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# asyncio_mode returns with pytest-asyncio when the first async test lands (phase 5,
+# the Chainlit data layer). Configuring it now warns on every run for no benefit.
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/__init__.py"]

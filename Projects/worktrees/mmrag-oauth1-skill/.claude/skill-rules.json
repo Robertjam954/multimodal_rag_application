@@ -1,0 +1,40 @@
+{
+  "directoryMap": {
+    "reports": "publication-figures",
+    "src/exploratory data analysis": "data-analysis-hygiene",
+    "src/data collection and processing": "data-analysis-hygiene",
+    "data": "data-analysis-hygiene"
+  },
+  "skills": {
+    "publication-figures": {
+      "description": "Publication-quality figure standard (vector PDF + 600 DPI PNG, Arial, Okabe-Ito, grayscale-safe, error bars + n + significance).",
+      "priority": 8,
+      "triggers": {
+        "keywords": ["figure", "plot", "chart", "panel", "axis", "legend", "dpi", "colormap", "palette", "seaborn", "matplotlib"],
+        "keywordPatterns": ["\\b(?:fig(?:ure)?|plot|chart|panel)s?\\b"],
+        "pathPatterns": ["reports/**", "**/*plots*.py", "**/*figures*.py"],
+        "intentPatterns": ["(?:make|create|export|generate|save|revise|fix).*(?:figure|plot|chart|panel)"]
+      }
+    },
+    "data-analysis-hygiene": {
+      "description": "Data hygiene: missingness audit before EDA, skip existing outputs, step-by-step merge diagnostics, PHI safety.",
+      "priority": 9,
+      "triggers": {
+        "keywords": ["dataset", "merge", "join", "eda", "table 1", "missingness", "impute", "feature", "cohort", "phi", "patient"],
+        "keywordPatterns": ["\\b(?:merg|join)(?:e|ing|ed)?\\b", "\\bmissing(?:ness)?\\b"],
+        "pathPatterns": ["data/**", "**/*.csv", "**/*eda*.py", "**/exploratory*/**"],
+        "intentPatterns": ["(?:load|merge|join|clean|audit|analyze).*(?:data|dataset|table|cohort)", "(?:run|do|start).*(?:eda|analysis|table 1)"]
+      }
+    },
+    "oauth1-auth": {
+      "description": "OAuth 1.0 / 1.0a (RFC 5849): sign requests, run the three-legged flow, verify signatures, debug 401 invalid-signature errors. Not for OAuth 2.0 / Entra ID.",
+      "priority": 7,
+      "triggers": {
+        "keywords": ["oauth 1.0", "oauth1", "oauth 1.0a", "rfc 5849", "oauth_signature", "oauth_nonce", "consumer key", "consumer secret", "request token", "hmac-sha1"],
+        "keywordPatterns": ["\\boauth[ _-]?1(?:\\.0a?)?\\b", "\\boauth_(?:signature|nonce|timestamp|token|verifier|callback)\\b"],
+        "pathPatterns": ["**/*oauth1*.py", "**/*oauth1*"],
+        "intentPatterns": ["(?:sign|authenticate|authorize|verify|debug).*(?:oauth ?1|oauth_signature|request token)"]
+      }
+    }
+  }
+}

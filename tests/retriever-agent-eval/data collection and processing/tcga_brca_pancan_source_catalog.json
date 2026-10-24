@@ -1,0 +1,49 @@
+{
+  "catalog_version": "0.1.0",
+  "scope": "planned TCGA-BRCA PanCancer source augmentation",
+  "artifact_format": "json",
+  "sources": [
+    {
+      "id": "clinical_timeline_treatment",
+      "status": "planned_external_augmentation",
+      "source_name": "GDAC Firehose",
+      "source_url": "https://gdac.broadinstitute.org/",
+      "source_file": "Merge_Clinical.Level_1.20160128/clin.merged.txt",
+      "raw_format": "tsv",
+      "join_key_requirement": "Validate and record the exact TCGA patient or sample barcode transformation before joining.",
+      "transformation_reference": "https://github.com/cBioPortal/datahub/pull/1597",
+      "target_json_artifact": "clinical_timeline_treatment.json"
+    },
+    {
+      "id": "genetic_ancestry",
+      "status": "planned_external_augmentation",
+      "source_name": "CCG-AIM-2020 genetic ancestry data",
+      "source_url": "https://gdc.cancer.gov/about-data/publications/CCG-AIM-2020",
+      "source_file": "Admixture_by_sample.txt",
+      "raw_format": "tsv",
+      "join_key_requirement": "Validate sample identifiers, ancestry-component names, and that admixture values sum as documented before joining.",
+      "target_json_artifact": "genetic_ancestry.json"
+    },
+    {
+      "id": "methylation_450k",
+      "status": "planned_external_augmentation",
+      "source_name": "GDC PanCancer DNA methylation",
+      "source_url": "https://gdc.cancer.gov/node/977",
+      "source_file": "jhu-usc.edu_PANCAN_HumanMethylation450.betaValue_whitelisted.tsv",
+      "raw_format": "tsv",
+      "probe_metadata_source": "probe_meta/probe_450k_mapinfo_PQ.txt",
+      "join_key_requirement": "Validate sample barcodes and document a prespecified probe-reduction strategy before patient-level analysis.",
+      "target_json_artifact": "methylation_450k_feature_summary.json"
+    },
+    {
+      "id": "tumor_break_load",
+      "status": "discover_from_cbioportal_snapshot",
+      "source_name": "cBioPortal sample-level clinical attribute",
+      "source_file": "clinical_attributes.json and clinical_sample.json",
+      "attribute_label": "Tumor Break Load",
+      "method_reference": "https://pubmed.ncbi.nlm.nih.gov/36334560/",
+      "join_key_requirement": "Confirm exact attribute ID, data type, and sample coverage in clinical_attributes.json before use.",
+      "target_json_artifact": "tumor_break_load.json"
+    }
+  ]
+}

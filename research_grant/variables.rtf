@@ -1,0 +1,233 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2869
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 AndaleMono;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww12680\viewh7200\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \{\\rtf1\\ansi\\ansicpg1252\\cocoartf2869\
+\\cocoatextscaling0\\cocoaplatform0\{\\fonttbl\\f0\\fnil\\fcharset0 .AppleSystemUIFontMonospaced-Regular;\\f1\\fnil\\fcharset0 HelveticaNeue;\}\
+\{\\colortbl;\\red255\\green255\\blue255;\\red124\\green108\\blue216;\\red22\\green163\\blue83;\\red16\\green16\\blue16;\
+\\red161\\green0\\blue48;\\red27\\green81\\blue131;\\red16\\green16\\blue16;\\red196\\green216\\blue202;\\red16\\green16\\blue16;\
+\\red16\\green16\\blue16;\\red242\\green242\\blue242;\}\
+\{\\*\\expandedcolortbl;;\\cssrgb\\c56078\\c51765\\c87843;\\cssrgb\\c392\\c68627\\c40000\\c14118;\\cssrgb\\c7843\\c7843\\c7843\\c92157;\
+\\cssrgb\\c70196\\c0\\c24706;\\cssrgb\\c12549\\c39608\\c58431;\\cssrgb\\c7843\\c7843\\c7843\\c67843;\\cssrgb\\c80784\\c87451\\c83137;\\cssrgb\\c7843\\c7843\\c7843\\c60000;\
+\\cssrgb\\c7843\\c7843\\c7843;\\cssrgb\\c96078\\c96078\\c96078;\}\
+\\margl1440\\margr1440\\vieww13080\\viewh6480\\viewkind1\
+\\deftab720\
+\\pard\\pardeftab720\\partightenfactor0\
+\
+\\f0\\fs24 \\cf2 \\cb3 \\expnd0\\expndtw0\\kerning0\
+\\outl0\\strokewidth0 \\strokec2 """Frozen cohort, pathway, and analysis constants.\\cf4 \\strokec4 \\\
+\\\
+\\cf2 \\strokec2 Changing any value here is a new eval version. The generator seed and the\\cf4 \\strokec4 \\\
+\\cf2 \\strokec2 pathway map are part of the golden-file identity.\\cf4 \\strokec4 \\\
+\\cf2 \\strokec2 """\\cf4 \\strokec4 \\\
+\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf5 \\strokec5 from\\cf4 \\strokec4  __future__ \\cf5 \\strokec5 import\\cf4 \\strokec4  annotations\\\
+\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6 GENERATOR_SEED\\cf5 \\strokec5  =\\cf6 \\strokec6  20270910\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 SCHEMA_VERSION\\cf5 \\strokec5  =\\cf2 \\strokec2  "aim1_brainmet_eval_answer.v1"\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 DATASET_SCHEMA_VERSION\\cf5 \\strokec5  =\\cf2 \\strokec2  "synthetic_impact_like.v1"\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 N_PATIENTS\\cf5 \\strokec5  =\\cf6 \\strokec6  640\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 N_ALL_NULL_ROWS\\cf5 \\strokec5  =\\cf6 \\strokec6  8\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 TOP_N\\cf5 \\strokec5  =\\cf6 \\strokec6  10\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 COMPARISON_GENES\\cf5 \\strokec5  =\\cf6 \\strokec6  5\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 IRLS_MAX_ITER\\cf5 \\strokec5  =\\cf6 \\strokec6  50\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 IRLS_TOL\\cf5 \\strokec5  =\\cf6 \\strokec6  1e-12\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 WALD_Z\\cf5 \\strokec5  =\\cf6 \\strokec6  1.959963984540054\\cf4 \\strokec4 \\\
+\\cf6 \\strokec6 PAIRWISE_MIN_N\\cf5 \\strokec5  =\\cf6 \\strokec6  3\\cf4 \\strokec4 \\\
+\\\
+\\cf6 \\strokec6 MISSING_STRINGS\\cf5 \\strokec5  =\\cf4 \\strokec4  frozenset(\\\
+    \\\{\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf2 \\strokec2         ""\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "na"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "n/a"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "nan"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "null"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "none"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "not applicable"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "not available"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "unk/nd"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "."\\cf4 \\strokec4 ,\\\
+    \\\}\\\
+)\\\
+\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6 DATETIME_FIELDS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "diagnosis_datetime"\\cf4 \\strokec4 , \\cf2 \\strokec2 "ngs_datetime"\\cf4 \\strokec4 )\\\
+\\cf6 \\strokec6 NUMERIC_CORR_FIELDS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf2 \\strokec2     "age_dx_num"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "mutation_count_all_sites_sum"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "t_alt_count_max"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "tmb_val"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "fga_val"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "OS_months"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "tt_brain_met_mos"\\cf4 \\strokec4 ,\\\
+)\\\
+\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf7 \\strokec7 # Sanchez-Vega 10 pathways, frozen assignment (a gene appears in at most one pathway).\\cf4 \\strokec4 \\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6 PATHWAY_GENES\\cf4 \\strokec4 : dict[str, tuple[str, \\cf6 \\strokec6 ...\\cf4 \\strokec4 ]] \\cf5 \\strokec5 =\\cf4 \\strokec4  \\\{\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf2 \\strokec2     "pathway_RTK/RAS"\\cf4 \\strokec4 : (\\\
+\\cf2 \\strokec2         "EGFR"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "ERBB2"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "ERBB3"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "ERBB4"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "MET"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "PDGFRA"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "FGFR1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "FGFR2"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "KRAS"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "HRAS"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "NRAS"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "NF1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "BRAF"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "MAP2K1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "KIT"\\cf4 \\strokec4 ,\\\
+    ),\\\
+\\cf2 \\strokec2     "pathway_Nrf2"\\cf4 \\strokec4 : (\\cf2 \\strokec2 "NFE2L2"\\cf4 \\strokec4 , \\cf2 \\strokec2 "KEAP1"\\cf4 \\strokec4 , \\cf2 \\strokec2 "CUL3"\\cf4 \\strokec4 ),\\\
+\\cf2 \\strokec2     "pathway_PI3K"\\cf4 \\strokec4 : (\\\
+\\cf2 \\strokec2         "PIK3CA"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "PIK3R1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "PTEN"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "AKT1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "AKT2"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "AKT3"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "TSC1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "TSC2"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "MTOR"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "INPP4B"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "STK11"\\cf4 \\strokec4 ,\\\
+    ),\\\
+\\cf2 \\strokec2     "pathway_TGFB"\\cf4 \\strokec4 : (\\cf2 \\strokec2 "TGFBR1"\\cf4 \\strokec4 , \\cf2 \\strokec2 "TGFBR2"\\cf4 \\strokec4 , \\cf2 \\strokec2 "SMAD2"\\cf4 \\strokec4 , \\cf2 \\strokec2 "SMAD3"\\cf4 \\strokec4 , \\cf2 \\strokec2 "SMAD4"\\cf4 \\strokec4 , \\cf2 \\strokec2 "ACVR2A"\\cf4 \\strokec4 ),\\\
+\\cf2 \\strokec2     "pathway_p53"\\cf4 \\strokec4 : (\\cf2 \\strokec2 "TP53"\\cf4 \\strokec4 , \\cf2 \\strokec2 "MDM2"\\cf4 \\strokec4 , \\cf2 \\strokec2 "MDM4"\\cf4 \\strokec4 , \\cf2 \\strokec2 "ATM"\\cf4 \\strokec4 , \\cf2 \\strokec2 "CHEK2"\\cf4 \\strokec4 ),\\\
+\\cf2 \\strokec2     "pathway_Wnt"\\cf4 \\strokec4 : (\\cf2 \\strokec2 "APC"\\cf4 \\strokec4 , \\cf2 \\strokec2 "CTNNB1"\\cf4 \\strokec4 , \\cf2 \\strokec2 "AXIN1"\\cf4 \\strokec4 , \\cf2 \\strokec2 "AXIN2"\\cf4 \\strokec4 , \\cf2 \\strokec2 "TCF7L2"\\cf4 \\strokec4 , \\cf2 \\strokec2 "AMER1"\\cf4 \\strokec4 ),\\\
+\\cf2 \\strokec2     "pathway_Myc"\\cf4 \\strokec4 : (\\cf2 \\strokec2 "MYC"\\cf4 \\strokec4 , \\cf2 \\strokec2 "MYCN"\\cf4 \\strokec4 , \\cf2 \\strokec2 "MAX"\\cf4 \\strokec4 , \\cf2 \\strokec2 "MGA"\\cf4 \\strokec4 ),\\\
+\\cf2 \\strokec2     "pathway_Cell cycle"\\cf4 \\strokec4 : (\\\
+\\cf2 \\strokec2         "RB1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "CDK4"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "CDK6"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "CCND1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "CCNE1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "CDKN2A"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "CDKN2B"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2         "CDKN1A"\\cf4 \\strokec4 ,\\\
+    ),\\\
+\\cf2 \\strokec2     "pathway_Hippo"\\cf4 \\strokec4 : (\\cf2 \\strokec2 "NF2"\\cf4 \\strokec4 , \\cf2 \\strokec2 "LATS1"\\cf4 \\strokec4 , \\cf2 \\strokec2 "LATS2"\\cf4 \\strokec4 , \\cf2 \\strokec2 "YAP1"\\cf4 \\strokec4 , \\cf2 \\strokec2 "FAT1"\\cf4 \\strokec4 , \\cf2 \\strokec2 "STK3"\\cf4 \\strokec4 ),\\\
+\\cf2 \\strokec2     "pathway_Notch"\\cf4 \\strokec4 : (\\cf2 \\strokec2 "NOTCH1"\\cf4 \\strokec4 , \\cf2 \\strokec2 "NOTCH2"\\cf4 \\strokec4 , \\cf2 \\strokec2 "NOTCH3"\\cf4 \\strokec4 , \\cf2 \\strokec2 "NOTCH4"\\cf4 \\strokec4 , \\cf2 \\strokec2 "FBXW7"\\cf4 \\strokec4 , \\cf2 \\strokec2 "SPEN"\\cf4 \\strokec4 ),\\\
+\\\}\\\
+\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6 PATHWAY_NAMES\\cf4 \\strokec4 : tuple[str, \\cf6 \\strokec6 ...\\cf4 \\strokec4 ] \\cf5 \\strokec5 =\\cf4 \\strokec4  tuple(\\cf6 \\strokec6 PATHWAY_GENES\\cf4 \\strokec4 .keys())\\\
+\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf7 \\strokec7 # Genes that can be mutated in the synthetic cohort (union of pathway genes plus\\cf4 \\strokec4 \\\
+\\cf7 \\strokec7 # common breast-cancer genes that are not in the frozen 10-pathway map).\\cf4 \\strokec4 \\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6 EXTRA_GENES\\cf4 \\strokec4 : tuple[str, \\cf6 \\strokec6 ...\\cf4 \\strokec4 ] \\cf5 \\strokec5 =\\cf4 \\strokec4  (\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf2 \\strokec2     "GATA3"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "CDH1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "ARID1A"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "KMT2D"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "BRCA2"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "KMT2C"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "ESR1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "MAP3K1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "BRCA1"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "TBX3"\\cf4 \\strokec4 ,\\\
+)\\\
+\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6 GENE_NAMES\\cf4 \\strokec4 : tuple[str, \\cf6 \\strokec6 ...\\cf4 \\strokec4 ] \\cf5 \\strokec5 =\\cf4 \\strokec4  tuple(\\\
+    sorted(\\\{gene \\cf5 \\strokec5 for\\cf4 \\strokec4  genes \\cf5 \\strokec5 in\\cf6 \\strokec6  PATHWAY_GENES\\cf4 \\strokec4 .values() \\cf5 \\strokec5 for\\cf4 \\strokec4  gene \\cf5 \\strokec5 in\\cf4 \\strokec4  genes\\\} \\cf5 \\strokec5 |\\cf4 \\strokec4  set(\\cf6 \\strokec6 EXTRA_GENES\\cf4 \\strokec4 ))\\\
+)\\\
+\\\
+\\cf6 \\strokec6 DROPPED_COLUMN\\cf5 \\strokec5  =\\cf2 \\strokec2  "unused_lab_value"\\cf4 \\strokec4 \\\
+\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf7 \\strokec7 # Feature types after Stage 0. Keys are the analytic columns the solver grades.\\cf4 \\strokec4 \\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6 FEATURE_TYPES\\cf4 \\strokec4 : dict[str, str] \\cf5 \\strokec5 =\\cf4 \\strokec4  \\\{\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf2 \\strokec2     "SAMPLE_ID"\\cf4 \\strokec4 : \\cf2 \\strokec2 "string"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "record_id"\\cf4 \\strokec4 : \\cf2 \\strokec2 "string"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "SEX"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "PRIMARY_RACE"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "ETHNICITY"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "race_clean"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "ethnicity_clean"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "age_dx_num"\\cf4 \\strokec4 : \\cf2 \\strokec2 "float"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "age_cat"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "BIRTH_YEAR"\\cf4 \\strokec4 : \\cf2 \\strokec2 "integer"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "ca_histology"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "ca_grade"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "grade_ord"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "stage_dx"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "stage_diag_group"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "stage_iv_bin"\\cf4 \\strokec4 : \\cf2 \\strokec2 "binary"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "receptor_primary_cat"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "her2_status_bin"\\cf4 \\strokec4 : \\cf2 \\strokec2 "binary"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "diagnosis_datetime"\\cf4 \\strokec4 : \\cf2 \\strokec2 "datetime"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "ngs_datetime"\\cf4 \\strokec4 : \\cf2 \\strokec2 "datetime"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "OS_months"\\cf4 \\strokec4 : \\cf2 \\strokec2 "float"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "os_status_bin"\\cf4 \\strokec4 : \\cf2 \\strokec2 "binary"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "os_dx_status"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "tt_brain_met_mos"\\cf4 \\strokec4 : \\cf2 \\strokec2 "float"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "brain_met_event"\\cf4 \\strokec4 : \\cf2 \\strokec2 "binary"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "any_brain_met"\\cf4 \\strokec4 : \\cf2 \\strokec2 "binary"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "brain_met_at_dx"\\cf4 \\strokec4 : \\cf2 \\strokec2 "binary"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "met_loc"\\cf4 \\strokec4 : \\cf2 \\strokec2 "categorical"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "mutation_count_all_sites_sum"\\cf4 \\strokec4 : \\cf2 \\strokec2 "integer"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "t_alt_count_max"\\cf4 \\strokec4 : \\cf2 \\strokec2 "integer"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "tmb_val"\\cf4 \\strokec4 : \\cf2 \\strokec2 "float"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "fga_val"\\cf4 \\strokec4 : \\cf2 \\strokec2 "float"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "genes"\\cf4 \\strokec4 : \\cf2 \\strokec2 "string"\\cf4 \\strokec4 ,\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6     DROPPED_COLUMN\\cf4 \\strokec4 : \\cf2 \\strokec2 "float"\\cf4 \\strokec4 ,\\\
+\\\}\\\
+\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf5 \\strokec5 for\\cf4 \\strokec4  _gene \\cf5 \\strokec5 in\\cf6 \\strokec6  GENE_NAMES\\cf4 \\strokec4 :\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6     FEATURE_TYPES\\cf4 \\strokec4 [_gene] \\cf5 \\strokec5 =\\cf2 \\strokec2  "binary"\\cf4 \\strokec4 \\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf5 \\strokec5 for\\cf4 \\strokec4  _pathway \\cf5 \\strokec5 in\\cf6 \\strokec6  PATHWAY_NAMES\\cf4 \\strokec4 :\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6     FEATURE_TYPES\\cf4 \\strokec4 [_pathway] \\cf5 \\strokec5 =\\cf2 \\strokec2  "binary"\\cf4 \\strokec4 \\\
+\\\
+\\cf6 \\strokec6 IDENTIFIER_FIELDS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "SAMPLE_ID"\\cf4 \\strokec4 , \\cf2 \\strokec2 "record_id"\\cf4 \\strokec4 )\\\
+\\cf6 \\strokec6 OUTCOME_FIELDS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "any_brain_met"\\cf4 \\strokec4 , \\cf2 \\strokec2 "brain_met_event"\\cf4 \\strokec4 , \\cf2 \\strokec2 "brain_met_at_dx"\\cf4 \\strokec4 , \\cf2 \\strokec2 "met_loc"\\cf4 \\strokec4 )\\\
+\\\
+\\cf6 \\strokec6 HISTOLOGY_LEVELS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf2 \\strokec2     "Breast Invasive Ductal Carcinoma"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "Breast Invasive Lobular Carcinoma"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "Breast Mixed Ductal and Lobular Carcinoma"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "Breast Invasive Carcinoma, NOS"\\cf4 \\strokec4 ,\\\
+\\cf2 \\strokec2     "Breast Metaplastic Carcinoma"\\cf4 \\strokec4 ,\\\
+)\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\strokec6 GRADE_LEVELS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "Low"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Intermediate"\\cf4 \\strokec4 , \\cf2 \\strokec2 "High"\\cf4 \\strokec4 )\\\
+\\cf6 \\strokec6 STAGE_LEVELS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "Stage I"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Stage II"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Stage III"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Stage IV"\\cf4 \\strokec4 )\\\
+\\cf6 \\strokec6 RECEPTOR_LEVELS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "HR+/HER2-"\\cf4 \\strokec4 , \\cf2 \\strokec2 "HR+/HER2+"\\cf4 \\strokec4 , \\cf2 \\strokec2 "HR-/HER2+"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Triple Negative"\\cf4 \\strokec4 )\\\
+\\cf6 \\strokec6 AGE_CAT_LEVELS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "<50"\\cf4 \\strokec4 , \\cf2 \\strokec2 "50-70"\\cf4 \\strokec4 , \\cf2 \\strokec2 ">70"\\cf4 \\strokec4 )\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\cb8 \\strokec6 RACE_LEVELS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "White"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Black"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Asian"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Native American"\\cf4 \\strokec4 )\\\
+\\pard\\pardeftab720\\partightenfactor0\
+\\cf6 \\cb3 \\strokec6 ETHNICITY_LEVELS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "Non-Hispanic"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Hispanic"\\cf4 \\strokec4 )\\\
+\\cf6 \\strokec6 SEX_LEVELS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "Female"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Male"\\cf4 \\strokec4 )\\\
+\\cf6 \\strokec6 MET_LOC_LEVELS\\cf5 \\strokec5  =\\cf4 \\strokec4  (\\cf2 \\strokec2 "Brain"\\cf4 \\strokec4 , \\cf2 \\strokec2 "Other"\\cf4 \\strokec4 , \\cf2 \\strokec2 "None"\\cf4 \\strokec4 )\\\
+\\pard\\pardeftab720\\qc\\partightenfactor0\
+\
+\\f1\\fs32 \\cf9 \\cb1 \\strokec9 \\\
+\\pard\\pardeftab720\\partightenfactor0\
+\
+\\fs24 \\cf10 \\cb11 \\strokec10 \\\
+\}}

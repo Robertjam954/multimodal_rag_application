@@ -1,0 +1,154 @@
+variable,original,mapped,note
+sample_type_bin,Primary tumor,1,from SAMPLE_TYPE_DETAILED
+sample_type_bin,Metastasis,2,from SAMPLE_TYPE_DETAILED
+age_cat,<50,<50,from age_dx
+age_cat,50-70 (50 ≤ age ≤ 70),50-70,from age_dx
+age_cat,>70,>70,from age_dx
+grade_ord,I/Low,Low,from ca_grade
+grade_ord,II/Intermediate,Intermediate,from ca_grade
+grade_ord,III/High,High,from ca_grade
+stage_diag_group,I/IA/IB,Stage I,from stage_dx
+stage_diag_group,II/IIA/IIB,Stage II,from stage_dx
+stage_diag_group,III/IIIA-C,Stage III,from stage_dx
+stage_diag_group,IV,Stage IV,from stage_dx
+stage_iv_bin,Stage IV,1,from stage_dx_iv
+stage_iv_bin,Stage I-III,0,from stage_dx_iv
+receptor_primary_cat,"HR+, HER2-",HR+/HER2-,from bca_subtype
+receptor_primary_cat,"HR+, HER2+",HR+/HER2+,from bca_subtype
+receptor_primary_cat,"HR-, HER2+",HR-/HER2+,from bca_subtype
+receptor_primary_cat,TNBC,Triple Negative,from bca_subtype
+race_clean,White / Middle Eastern,White,from PRIMARY_RACE
+race_clean,Black or African American,Black,from PRIMARY_RACE
+race_clean,Asian,Asian,from PRIMARY_RACE
+race_clean,Native American / Alaska,Native American,from PRIMARY_RACE
+ethnicity_clean,Non-Spanish; Non-Hispanic,Non-Hispanic,from ETHNICITY
+ethnicity_clean,Hispanic / Latino variants,Hispanic,from ETHNICITY
+her2_status_bin,Positive/elevated/amplified,1,from ca_bca_her_summ
+her2_status_bin,Negative,0,from ca_bca_her_summ
+study_id,cohort,alias,long-form alias for canonical source
+patient_id,record_id,alias,long-form alias for canonical source
+sample_id,SAMPLE_ID,alias,long-form alias for canonical source
+center,CENTER,alias,long-form alias for canonical source
+sex,SEX,alias,long-form alias for canonical source
+year_of_birth,BIRTH_YEAR,alias,long-form alias for canonical source
+primary_race,PRIMARY_RACE,alias,long-form alias for canonical source
+secondary_race,naaccr_race_code_secondary,alias,long-form alias for canonical source
+tertiary_race,naaccr_race_code_tertiary,alias,long-form alias for canonical source
+ethnicity_category,ETHNICITY,alias,long-form alias for canonical source
+region_of_patient_origin,(absent in cohort),NaN,long-form var not present in source
+age_at_diagnosis,age_dx_num,alias,long-form alias for canonical source
+age_at_initial_diagnosis_years,age_dx_num,alias,long-form alias for canonical source
+age_at_primary_diagnosis,age_dx_num,alias,long-form alias for canonical source
+was_a_biopsy_performed_of_metastatic_site,(absent in cohort),NaN,long-form var not present in source
+oncotree_code,ONCOTREE_CODE,alias,long-form alias for canonical source
+cancer_type,(absent in cohort),NaN,long-form var not present in source
+cancer_type_detailed,(absent in cohort),NaN,long-form var not present in source
+tumor_registry_icd_o_3_behavior_code,naaccr_behavior_cd,alias,long-form alias for canonical source
+additional_breast_cancer_diagnoses,(absent in cohort),NaN,long-form var not present in source
+other_oncotree_diagnosis,(absent in cohort),NaN,long-form var not present in source
+other_oncotree_diagnosis_1,(absent in cohort),NaN,long-form var not present in source
+other_oncotree_diagnosis_2,(absent in cohort),NaN,long-form var not present in source
+other_oncotree_diagnosis_3,(absent in cohort),NaN,long-form var not present in source
+number_of_other_invasive_cancer_diagnosis,n_cancers_index,alias,long-form alias for canonical source
+other_invasive_cancer_diagnosis,non_idx_types,alias,long-form alias for canonical source
+number_of_cancers_any_type,n_cancers,alias,long-form alias for canonical source
+number_of_bpc_project_cancers_index_cancers,n_cancers_index,alias,long-form alias for canonical source
+ki67_percent,(absent in cohort),NaN,long-form var not present in source
+oncotype_dx_score,ca_bca_oncotypedx,alias,long-form alias for canonical source
+ajcc_stage,stage_dx,alias,long-form alias for canonical source
+stage_at_diagnosis,stage_dx,alias,long-form alias for canonical source
+grade,ca_grade,alias,long-form alias for canonical source
+her2_status,ca_bca_her_summ,alias,long-form alias for canonical source
+hormone_receptor_status,bca_subtype,alias,long-form alias for canonical source
+er_pr_receptor_change,(absent in cohort),NaN,long-form var not present in source
+discordance_receptor_status_with_primary,(absent in cohort),NaN,long-form var not present in source
+her2_receptor_status_at_metastatic_diagnosis,(absent in cohort),NaN,long-form var not present in source
+her2_receptor_status_at_initial_diagnosis,ca_bca_her_summ,alias,long-form alias for canonical source
+hr_status_at_metastatic_diagnosis,(absent in cohort),NaN,long-form var not present in source
+hr_status_at_initial_diagnosis,bca_subtype,alias,long-form alias for canonical source
+site_of_sample_tested,SAMPLE_TYPE_DETAILED,alias,long-form alias for canonical source
+stage_at_initial_breast_cancer_diagnosis,stage_dx,alias,long-form alias for canonical source
+subtype_of_metastatic_diagnosis,(absent in cohort),NaN,long-form var not present in source
+subtype_of_initial_diagnosis,bca_subtype,alias,long-form alias for canonical source
+histology,ca_histology,alias,long-form alias for canonical source
+histology_category,ca_hist_brca,alias,long-form alias for canonical source
+sequence_assay_id,SEQ_ASSAY_ID,alias,long-form alias for canonical source
+age_at_which_sequencing_was_reported,AGE_AT_SEQUENCING,alias,long-form alias for canonical source
+age_at_sample_collection_4,AGE_AT_SEQUENCING,alias,long-form alias for canonical source
+age_at_sequencing,AGE_AT_SEQUENCING,alias,long-form alias for canonical source
+sequenced_sample,SAMPLE_ID,alias,long-form alias for canonical source
+how_long_sample_was_collected_after_starting_first_line_systemic_therapy_30_days_30_days_treatment_naive,(absent in cohort),NaN,long-form var not present in source
+sample_site,SAMPLE_TYPE_DETAILED,alias,long-form alias for canonical source
+number_of_samples_per_patient,(absent in cohort),NaN,long-form var not present in source
+sequencing_method,SEQ_ASSAY_ID,alias,long-form alias for canonical source
+fraction_genome_altered,(absent in cohort),NaN,long-form var not present in source
+mutation_count,mutation_count_all_sites_sum,alias,long-form alias for canonical source
+mismatch_repair_mmr_testing_at_time_of_sample_acquisition,(absent in cohort),NaN,long-form var not present in source
+msi_h_test_result_at_time_of_sample_acquisition,(absent in cohort),NaN,long-form var not present in source
+microsatellite_instability_msi_testing_at_time_of_sample_acquisition,(absent in cohort),NaN,long-form var not present in source
+tumor_mutational_burden,(absent in cohort),NaN,long-form var not present in source
+tmb_nonsynonymous,(absent in cohort),NaN,long-form var not present in source
+x1p_19q_codeletion,(absent in cohort),NaN,long-form var not present in source
+idh1_2_mutation,(absent in cohort),NaN,long-form var not present in source
+integrated_histomolecular_group,(absent in cohort),NaN,long-form var not present in source
+mgmt_methylation_status,(absent in cohort),NaN,long-form var not present in source
+patients_age_of_death_in_days,age_death_yrs,alias,long-form alias for canonical source
+age_at_first_distant_metastasis_in_days,dx_to_dmets_days,alias,long-form alias for canonical source
+time_from_initial_diagnosis_to_metastatic_diagnosis_months,dx_to_dmets_mos,alias,long-form alias for canonical source
+cause_of_death,(absent in cohort),NaN,long-form var not present in source
+patients_vital_status,os_dx_status,alias,long-form alias for canonical source
+vital_status,os_status_f,alias,long-form alias for canonical source
+overall_survival_months,OS_months,alias,long-form alias for canonical source
+overall_survival_status,os_dx_status,alias,long-form alias for canonical source
+patients_age_of_last_follow_up_in_days,last_anyvisit_int,alias,long-form alias for canonical source
+interval_in_days_from_dob_to_date_of_last_contact,dob_lastalive_int,alias,long-form alias for canonical source
+interval_in_days_from_dob_to_dod,hybrid_death_int,alias,long-form alias for canonical source
+sample_class,(absent in cohort),NaN,long-form var not present in source
+year_of_last_contact,(absent in cohort),NaN,long-form var not present in source
+year_of_death,(absent in cohort),NaN,long-form var not present in source
+pfs_i_from_diagnosis_status,pfs_i_adv_status,alias,long-form alias for canonical source
+pfs_m_from_diagnosis_status,pfs_m_adv_status,alias,long-form alias for canonical source
+age_at_metastatic_diagnosis_years,dx_to_dmets_yrs,alias,long-form alias for canonical source
+lrr_date_interval_days,(absent in cohort),NaN,long-form var not present in source
+lrr_radiation_therapy,(absent in cohort),NaN,long-form var not present in source
+site_of_lrr,(absent in cohort),NaN,long-form var not present in source
+distant_metastatic_disease_interval,dx_to_dmets_days,alias,long-form alias for canonical source
+distant_mets_adrenal,dist_mets_adrenal,alias,long-form alias for canonical source
+distant_mets_bone,dist_mets_bone,alias,long-form alias for canonical source
+distant_mets_brain,dist_mets_brain_cns,alias,long-form alias for canonical source
+distant_mets_liver,dist_mets_liver,alias,long-form alias for canonical source
+distant_mets_lung,dist_mets_pulmonary,alias,long-form alias for canonical source
+distant_mets_lymph_nodes,dist_mets_lymph_nodes,alias,long-form alias for canonical source
+distant_mets_other,dist_mets_other,alias,long-form alias for canonical source
+distant_mets_pleura,dist_mets_pleura_and_malignant_pleural_effusion,alias,long-form alias for canonical source
+distant_mets_subcutaneous_tissue,dist_mets_skin,alias,long-form alias for canonical source
+age_at_metastatic_diagnosis,dx_to_dmets_mos,alias,long-form alias for canonical source
+met_site_liver,dist_mets_liver,alias,long-form alias for canonical source
+has_this_patient_experienced_a_loco_regional_recurrence_lrr,(absent in cohort),NaN,long-form var not present in source
+met_site_lung,dist_mets_pulmonary,alias,long-form alias for canonical source
+met_site_lymph_node,dist_mets_lymph_nodes,alias,long-form alias for canonical source
+total_number_of_therapies_received_in_metastatic_disease_treatment,ca_n_regimens,alias,long-form alias for canonical source
+interval_between_sequencing_and_metastatis_daignosis,(absent in cohort),NaN,long-form var not present in source
+met_site_multiple_sites,(absent in cohort),NaN,long-form var not present in source
+met_site_other_site,dist_mets_other,alias,long-form alias for canonical source
+met_site_bone_only,(absent in cohort),NaN,long-form var not present in source
+met_site_bone,dist_mets_bone,alias,long-form alias for canonical source
+met_site_brain,dist_mets_brain_cns,alias,long-form alias for canonical source
+met_site_soft_tissue,dist_mets_skin,alias,long-form alias for canonical source
+met_site_visceral,(absent in cohort),NaN,long-form var not present in source
+sites_of_distant_metastasis_at_the_time_of_cancer_diagnosis_stage_iv_patients,(absent in cohort),NaN,long-form var not present in source
+year_of_next_generation_sequencing,CPT_SEQ_DATE,alias,long-form alias for canonical source
+patient_id_in_supp_table_1,record_id,alias,long-form alias for canonical source
+tt_compete_first_dmets_mos,min(dx_to_dist_mets_<organ>_mos) across non-brain sites where dist_mets_<organ>==1,float months,earliest non-brain distant met
+compete_first_dmets_event,any(dist_mets_<organ>==1) across non-brain sites,0/1,competing event indicator
+tt_brain_met_competing_mos,"min(brain_time if event, other_time if event, OS_time)",float months,multi-state time-to-first-event for Aim 2 competing-risks model
+brain_met_competing_status,argmin among brain/other/censor,0 censor / 1 brain / 2 other,competing-risks status for Aim 2 (cmprsk / FineGray)
+chemo_overall,regex on regimen_drugs: capecitabine|cyclophosphamide|paclitaxel|docetaxel|epirubici...,0/1,any regimen with matching drug (GENIE BPC only)
+endocrine_overall,regex on regimen_drugs: tamoxifen|fulvestrant|toremifene|raloxifene|anastrozole|letr...,0/1,any regimen with matching drug (GENIE BPC only)
+aromatase_inhibitor_overall,regex on regimen_drugs: anastrozole|letrozole|exemestane...,0/1,any regimen with matching drug (GENIE BPC only)
+tamoxifen_overall,regex on regimen_drugs: tamoxifen|toremifene|raloxifene...,0/1,any regimen with matching drug (GENIE BPC only)
+cdk4_6_inhibitor_overall,regex on regimen_drugs: palbociclib|ribociclib|abemaciclib...,0/1,any regimen with matching drug (GENIE BPC only)
+akt_inhibitor_overall,regex on regimen_drugs: capivasertib|ipatasertib|miransertib|afuresertib...,0/1,any regimen with matching drug (GENIE BPC only)
+her2_targeted_overall,regex on regimen_drugs: trastuzumab|pertuzumab|lapatinib|neratinib|tucatinib|t-dm1|a...,0/1,any regimen with matching drug (GENIE BPC only)
+parp_inhibitor_overall,regex on regimen_drugs: olaparib|talazoparib|niraparib|rucaparib|veliparib...,0/1,any regimen with matching drug (GENIE BPC only)
+immuno_overall,regex on regimen_drugs: pembrolizumab|atezolizumab|nivolumab|ipilimumab|durvalumab...,0/1,any regimen with matching drug (GENIE BPC only)

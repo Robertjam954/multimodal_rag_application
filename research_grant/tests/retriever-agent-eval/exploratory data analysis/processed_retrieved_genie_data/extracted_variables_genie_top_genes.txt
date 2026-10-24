@@ -1,0 +1,11 @@
+# Top 10 genes by mutation prevalence in any_brain_met == 1 cohort
+TP53
+PIK3CA
+GATA3
+CDH1
+PTEN
+NF1
+ARID1A
+KMT2D
+BRCA2
+KMT2C

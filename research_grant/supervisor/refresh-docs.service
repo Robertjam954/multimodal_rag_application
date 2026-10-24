@@ -1,0 +1,12 @@
+# ~/.config/systemd/user/refresh-docs.service
+[Unit]
+Description=Supervisor: refresh subproject self-docs (local, LM Studio)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=PYTHONUNBUFFERED=1
+# Point this at your venv python if you use one, e.g. %h/.venvs/supervisor/bin/python
+ExecStart=/usr/bin/python3 %h/robertjam954.github.io/supervisor/refresh_docs.py
+# LM Studio's local server must be running and serving at localhost:1234 before 5:30.

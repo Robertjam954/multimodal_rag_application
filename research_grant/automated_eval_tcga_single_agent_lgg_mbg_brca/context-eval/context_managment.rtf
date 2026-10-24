@@ -1,0 +1,84 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2869
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 AndaleMono;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww13080\viewh6480\viewkind1
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 ## Best practices and common patterns\
+\
+Following these best practices helps you establish a sustainable and effective context engineering workflow.\
+\
+### Context management principles\
+\
+**Start small and iterate**: Begin with minimal project context and gradually add detail based on observed AI behavior. Avoid context overload that can dilute focus.\
+\
+**Keep context fresh**: Regularly audit and update your project documentation (using the agent) as the codebase evolves. Stale context leads to outdated or incorrect suggestions.\
+\
+**Use progressive context building**: Start with high-level concepts and progressively add detail rather than overwhelming the AI with comprehensive information upfront.\
+\
+**Maintain context isolation**: Keep different types of work (planning, coding, testing, debugging) in separate chat sessions to prevent context mixing and confusion.\
+\
+**Be mindful of credit consumption**: More context files, larger instruction sets, and complex agent chains all increase token usage and [AI credit](/docs/agents/concepts/language-models.md#ai-credits-and-model-costs) consumption. Start with concise context and expand only when needed. For more tips, see [optimize AI credit usage](/docs/agents/guides/optimize-usage.md).\
+\
+### Documentation strategies\
+\
+**Create living documents**: Treat your custom instructions, custom agents, and templates as evolving resources. Refine them based on observed AI mistakes or shortcomings.\
+\
+**Focus on decision-making context**: Prioritize information that helps AI make better architectural and implementation decisions rather than exhaustive technical details.\
+\
+**Use consistent patterns**: Establish and document coding conventions, naming patterns, and architectural decisions to help AI generate consistent code.\
+\
+**Reference external knowledge**: Link to relevant external documentation, APIs, or standards that the AI should consider when generating code.\
+\
+### Workflow optimization\
+\
+**Handoffs between agents**: Use [handoffs](/docs/agent-customization/custom-agents.md#handoffs) to create guided transitions and implement end-to-end development workflows between planning, implementation, and review agents.\
+\
+**Implement feedback loops**: Continuously validate that AI understands your context correctly. Ask clarifying questions and course-correct early when misunderstandings occur.\
+\
+**Use incremental complexity**: Build features incrementally, validating each step before adding complexity. This prevents compounding errors and maintains working code.\
+\
+**Separate concerns**: Use different agents for different activities (planning versus implementation versus review) to maintain focused, relevant context.\
+\
+**Version your context**: Use git to track changes to your context engineering setup, allowing you to revert problematic changes and understand what works best.\
+\
+**Verify cache performance**: Use the [Agent Debug Logs](/docs/agents/agent-troubleshooting/chat-debug-view.md) to check prompt cache hit rates and token usage. Good cache performance means your context setup is structured in a way that the model provider can reuse previous request prefixes, reducing latency and token costs.\
+\
+### Anti-patterns to avoid\
+\
+**Context dumping**: Avoid providing excessive, unfocused information that doesn't directly help with decision-making.\
+\
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    **Inconsistent guidance**: Ensure all documentation aligns with your chosen architectural patterns and coding standards.\
+\
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    **Neglecting validation**: Don't assume AI correctly understands your context. Always test understanding before proceeding with complex implementations.\
+\
+**One-size-fits-all**: Different team members or project phases may need different context configurations. Be flexible in your approach.\
+\
+**Over-engineering agent chains**: Deeply nested subagent workflows and excessive tool calls multiply token usage and [credit consumption](/docs/agents/concepts/language-models.md#ai-credits-and-model-costs). Keep agent chains as shallow as practical and limit tools to what each agent actually needs.\
+\
+### Measuring success\
+\
+A successful context engineering setup should result in:\
+\
+* **Reduced back-and-forth**: Less need to correct or redirect AI responses\
+* **Consistent code quality**: Generated code follows established patterns and conventions\
+* **Faster implementation**: Less time spent explaining context and requirements\
+* **Better architectural decisions**: AI suggests solutions that align with project goals and constraints\
+\
+### Scaling context engineering\
+\
+**For teams**: Share context engineering setups through version control and establish team conventions for maintaining shared context.\
+\
+**For large projects**: Consider creating context hierarchies with project-wide, module-specific, and feature-specific context layers using [instructions files](/docs/agent-customization/custom-instructions.md).\
+\
+**For long-term projects**: Establish regular context review cycles to keep documentation current and remove outdated information.\
+\
+**For multiple projects**: Create reusable templates and patterns that can be adopted across different codebases and domains.\
+\
+By following these practices and continuously refining your approach, you'll develop a context engineering workflow that enhances AI-assisted development while maintaining code quality and project consistency.\
+\
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ## Related resources\
+\
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    Learn more about customizing AI in VS Code:\
+}

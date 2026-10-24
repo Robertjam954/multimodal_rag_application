@@ -1,0 +1,13 @@
+# Development and CI dependencies - what .github/workflows/ci.yml actually invokes.
+#
+# Upper bounds are deliberate: a major-version bump in a linter or type checker can
+# change CI outcomes without any change to this repo's code, and the reproducibility
+# gate in ADR-0003 requires that CI results be attributable to the diff.
+
+-r requirements.txt
+
+pytest>=8.3,<9
+pytest-cov>=5.0,<7
+mypy>=1.11,<2
+ruff>=0.6,<1
+black>=24.8,<26

@@ -1,0 +1,56 @@
+{
+  "analysis_policy": {
+    "imputation_performed": false,
+    "prevalence_unit": "unique patient",
+    "statistical_model_fitted": false
+  },
+  "correct_answers": {
+    "1_required_columns_retained": [
+      "Hugo_Symbol",
+      "Mutation_Status",
+      "Variant_Classification",
+      "case_id",
+      "t_alt_count",
+      "t_depth"
+    ],
+    "2_pik3ca_prevalence_with_all_eligible_cases": {
+      "denominator": 14,
+      "mutated_cases": 6,
+      "prevalence": 0.42857142857142855,
+      "prevalence_percent": 42.857142857142854,
+      "ratio": "6/14"
+    },
+    "3_file_and_case_counts_after_deduplication": {
+      "duplicate_case_files_removed": 2,
+      "input_maf_files": 16,
+      "unique_cases": 14
+    },
+    "4_tp53_patient_level_prevalence": {
+      "denominator": 14,
+      "mutated_cases": 7,
+      "prevalence": 0.5,
+      "prevalence_percent": 50.0,
+      "ratio": "7/14"
+    },
+    "5_plekh1_qualifying_mutation_present": false,
+    "6_pik3ca_variant_allele_fraction": {
+      "tumor_alt_count": 75,
+      "tumor_depth": 125,
+      "variant_allele_fraction": 0.6
+    },
+    "7_missing_numeric_value_without_imputation": {
+      "input_t_alt_count": null,
+      "input_t_depth": null,
+      "variant_allele_fraction": null
+    },
+    "8_phi_removal": {
+      "fake_patient_name_used_for_test": "Jane Doe",
+      "patient_name_removed": true,
+      "phi_present_in_cleaned_record": false
+    }
+  },
+  "security_checks": {
+    "embedded_api_key_found": false,
+    "passed": true
+  }
+}

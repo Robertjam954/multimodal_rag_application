@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/missingness_stage.schema.json",
+  "title": "BRCA missingness Stage 0 report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "normalization", "datasets"],
+  "properties": {
+    "schema_version": {"const": "brca_missingness_stage.v1"},
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blank_string", "json_nan", "row_drop_rule"],
+      "properties": {
+        "blank_string": {"const": "null"},
+        "json_nan": {"const": "null"},
+        "row_drop_rule": {"const": "drop only when every field is null after normalization"}
+      }
+    },
+    "datasets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dataset",
+          "source_filename",
+          "source_representation",
+          "source_checksum",
+          "filename",
+          "format",
+          "orientation",
+          "input_records",
+          "retained_records",
+          "all_columns_missing_rows_dropped",
+          "partially_or_fully_observed_rows_retained",
+          "field_missingness_before_row_drop"
+        ],
+        "properties": {
+          "dataset": {"type": "string", "minLength": 1},
+          "source_filename": {"type": "string", "minLength": 1},
+          "source_representation": {"const": "canonical_pre_normalization_records"},
+          "source_checksum": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "filename": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*\\.json$"},
+          "format": {"const": "json"},
+          "orientation": {"const": "records"},
+          "input_records": {"type": "integer", "minimum": 0},
+          "retained_records": {"type": "integer", "minimum": 0},
+          "all_columns_missing_rows_dropped": {"type": "integer", "minimum": 0},
+          "partially_or_fully_observed_rows_retained": {"type": "integer", "minimum": 0},
+          "field_missingness_before_row_drop": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["field", "missing_count", "missing_fraction"],
+              "properties": {
+                "field": {"type": "string", "minLength": 1},
+                "missing_count": {"type": "integer", "minimum": 0},
+                "missing_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
